@@ -12,7 +12,7 @@
 <style>
 :root{
   --ground:#16130F; --surface:#1F1A15; --sunk:#100D0A; --line:#383026; --line-soft:#261F19;
-  --ink:#F4EDE2; --ink-2:#B6A88F; --ink-3:#7E7263; --brass:#C6963F;
+  --ink:#F4EDE2; --ink-2:#B6A88F; --ink-3:#8D8172; --brass:#C6963F;
   --glow:rgba(198,150,63,.16);
   --f-display:Didot,"Bodoni 72","Bodoni MT",Georgia,"Times New Roman",serif;
   --f-ui:"Avenir Next","Avenir","Helvetica Neue",system-ui,-apple-system,sans-serif;
@@ -28,7 +28,8 @@ body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:99;opa
 a{color:inherit}
 img{max-width:100%}
 .wrap{max-width:1120px;margin:0 auto;padding:0 var(--pad)}
-.meta{font-family:var(--f-num);font-size:10.5px;text-transform:uppercase;letter-spacing:.14em;color:var(--ink-3)}
+.meta{font-family:var(--f-num);font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:var(--ink-3)}
+.meta.bassa{text-transform:none;letter-spacing:.01em}
 :focus-visible{outline:1.5px solid var(--brass);outline-offset:3px}
 
 header{display:flex;align-items:center;justify-content:space-between;padding:26px 0}
@@ -52,7 +53,7 @@ h1{font-family:var(--f-display);font-weight:400;font-size:clamp(38px,7vw,66px);l
 
 .stage{position:relative;aspect-ratio:3/4;border:1px solid var(--line-soft);border-radius:6px;overflow:hidden;
   background:radial-gradient(90% 60% at 50% 6%,var(--surface),var(--sunk) 72%);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.05),inset 0 -70px 100px -60px rgba(0,0,0,.85)}
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05),inset 0 -24px 14px -20px rgba(0,0,0,.8)}
 .stage::before{content:"";position:absolute;top:0;left:12%;right:12%;height:1px;z-index:3;
   background:linear-gradient(90deg,transparent,var(--brass),transparent);opacity:.6}
 .stage::after{content:"";position:absolute;top:-70px;left:50%;width:70%;height:150px;transform:translateX(-50%);
@@ -61,7 +62,7 @@ h1{font-family:var(--f-display);font-weight:400;font-size:clamp(38px,7vw,66px);l
 .capo{position:absolute;object-fit:contain;z-index:2;
   filter:drop-shadow(0 18px 26px rgba(0,0,0,.55));animation:drop .55s var(--e-out) both}
 @keyframes drop{from{opacity:0;transform:translateY(-12px) scale(1.02)}to{opacity:1;transform:none}}
-.stage .lab{position:absolute;left:12px;top:12px;z-index:3;font-family:var(--f-num);font-size:9.5px;
+.stage .lab{position:absolute;left:12px;top:12px;z-index:3;font-family:var(--f-num);font-size:11px;
   text-transform:uppercase;letter-spacing:.14em;color:var(--ink-2);background:rgba(0,0,0,.4);
   border:1px solid var(--line-soft);border-radius:2px;padding:5px 9px;backdrop-filter:blur(8px)}
 .picker{display:flex;gap:10px;margin-top:14px;justify-content:center;flex-wrap:wrap}
@@ -81,7 +82,7 @@ h2{font-family:var(--f-display);font-weight:400;font-size:clamp(26px,4vw,38px);l
 @media(min-width:760px){ .cols{grid-template-columns:repeat(3,1fr);gap:34px} }
 .card h3{font-family:var(--f-display);font-weight:400;font-size:21px;margin:14px 0 6px}
 .card p{color:var(--ink-2);font-size:14.5px;margin:0}
-.num{font-family:var(--f-num);font-size:10.5px;letter-spacing:.16em;color:var(--brass)}
+.num{font-family:var(--f-num);font-size:11px;letter-spacing:.16em;color:var(--brass)}
 
 .steps{display:grid;gap:22px}
 @media(min-width:760px){ .steps{grid-template-columns:repeat(4,1fr);gap:28px} }
@@ -91,7 +92,7 @@ h2{font-family:var(--f-display);font-weight:400;font-size:clamp(26px,4vw,38px);l
 
 table{width:100%;border-collapse:collapse;font-size:14.5px}
 th,td{text-align:left;padding:13px 10px;border-bottom:1px solid var(--line-soft)}
-th{font-family:var(--f-num);font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-3);
+th{font-family:var(--f-num);font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-3);
   font-weight:400}
 td.n{font-family:var(--f-num);font-variant-numeric:tabular-nums;color:var(--ink-2)}
 .tablewrap{overflow-x:auto}
@@ -120,7 +121,7 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);color:var(--ink
 
   <div class="hero">
     <div>
-      <span class="meta">Guardaroba virtuale · gira sul tuo Mac</span>
+      <span class="meta bassa">Guardaroba virtuale · gira sul tuo Mac</span>
       <h1>Il camerino che hai in casa.</h1>
       <p class="lede">Fotografa i vestiti che possiedi. Vesta li ricostruisce come immagini di catalogo,
         li cataloga da sola e te li fa provare addosso, sulla tua foto.</p>
@@ -164,15 +165,12 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);color:var(--ink
     <span class="num">Cosa fa</span>
     <h2>Non solo la prova.</h2>
     <div class="cols">
-      <div class="card"><span class="meta">Colori</span>
-        <h3>La tua stagione</h3>
+      <div class="card"><h3>La tua stagione</h3>
         <p>Dalla foto stima il sottotono della pelle in CIELAB e ne ricava la palette e i capi che ti stanno bene.</p></div>
-      <div class="card"><span class="meta">Guardaroba</span>
-        <h3>Catalogato da solo</h3>
+      <div class="card"><h3>Catalogato da solo</h3>
         <p>Categoria, colore dominante e materiale vengono assegnati durante l'importazione. I doppioni
           vengono segnalati, mai cancellati.</p></div>
-      <div class="card"><span class="meta">Specchio</span>
-        <h3>Prima guardi, poi generi</h3>
+      <div class="card"><h3>Prima guardi, poi generi</h3>
         <p>Comporre un look è immediato e gratuito. Il modello parte solo quando lo chiedi tu.</p></div>
     </div>
   </section>
