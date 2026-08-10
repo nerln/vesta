@@ -598,6 +598,10 @@ function Sheet({sheet,close,ctx}){
       ${[['gemini','Google Gemini'],['openai','OpenAI']].map(([p,l])=>html`
         <button aria-pressed=${prov===p} onClick=${()=>{setProv(p);V.settings.provider=p;setKey('');}}>${l}</button>`)}
     </div>
+    ${prov==='openai'?html`<div class="err-box" style="margin-bottom:12px">
+      OpenAI non risponde alle pagine web: il browser blocca la chiamata prima che parta, perche'
+      api.openai.com non autorizza l'header con la chiave. In questa versione funziona Gemini.
+      Per usare OpenAI serve la versione con il backend sul tuo Mac.</div>`:null}
     <div class="row">
       <input class="field" type="password" autocomplete="off" value=${key}
         placeholder=${V.settings.keyFor(prov)?'configurata':(prov==='openai'?'sk-…':'AIza…')}
@@ -607,7 +611,7 @@ function Sheet({sheet,close,ctx}){
     </div>
     <p class="hint" style="margin-top:8px">
       ${prov==='gemini'?'Chiave da aistudio.google.com. Le immagini richiedono la fatturazione attiva, circa 0,04 $ ciascuna.'
-        :'Chiave da platform.openai.com. Circa 0,07–0,25 $ a immagine.'}</p>
+        :'Chiave da platform.openai.com. Circa 0,07-0,25 $ a immagine.'}</p>
     <div class="sheet-h" style="margin-top:22px"><h2 style="font-size:18px">Aspetto</h2></div>
     <div class="switch">
       ${[['dark','Camerino'],['light','Giorno']].map(([t,l])=>html`

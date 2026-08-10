@@ -237,6 +237,18 @@ function friendly(provider, status, msg) {
   if (status === 429) return 'Troppe richieste, riprova fra poco.';
   return `${provider}: errore ${status}. ${m}`;
 }
+/** Il browser blocca le chiamate a OpenAI: l'header Authorization fa scattare un preflight
+ *  che api.openai.com non autorizza. Qui il muro diventa un messaggio comprensibile. */
+export const OPENAI_NEL_BROWSER = false;
+async function post(url, init, provider) {
+  try { return await fetch(url, init); }
+  catch (e) {
+    if (provider === 'openai') throw new Error(
+      'OpenAI non accetta chiamate dirette da una pagina web: il browser le blocca prima di partire. '
+      + 'Qui usa Gemini, oppure la versione con il backend sul tuo Mac.');
+    throw new Error('Rete non raggiungibile. Controlla la connessione e riprova.');
+  }
+}
 const blobToB64 = (blob) => new Promise((res, rej) => {
   const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1]); r.onerror = rej; r.readAsDataURL(blob);
 });
@@ -261,11 +273,11 @@ export async function visionJSON(prompt, images, schema) {
   if (p === 'openai') {
     const content = [{ type: 'text', text: prompt }];
     for (const b of parts) content.push({ type: 'image_url', image_url: { url: 'data:image/jpeg;base64,' + await blobToB64(b) } });
-    const r = await fetch('https://api.openai.com/v1/chat/completions', {
+    const r = await post('https://api.openai.com/v1/chat/completions', {
       method: 'POST', headers: { Authorization: 'Bearer ' + key, 'Content-Type': 'application/json' },
       body: JSON.stringify({ model: OPENAI_TEXT, messages: [{ role: 'user', content }],
         response_format: { type: 'json_schema', json_schema: { name: 'out', strict: true, schema } } }),
-    });
+    }, 'openai');
     const j = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(friendly('openai', r.status, j?.error?.message));
     return JSON.parse(j.choices[0].message.content);
@@ -274,8 +286,8 @@ export async function visionJSON(prompt, images, schema) {
   const body = { contents: [{ parts: [{ text: prompt }] }],
     generationConfig: { responseMimeType: 'application/json', responseSchema: toGeminiSchema(schema) } };
   for (const b of parts) body.contents[0].parts.push({ inlineData: { mimeType: 'image/jpeg', data: await blobToB64(b) } });
-  const r = await fetch(`${geminiBase(key)}/${GEMINI_TEXT}:generateContent`, {
-    method: 'POST', headers: { 'x-goog-api-key': key, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const r = await post(`${geminiBase(key)}/${GEMINI_TEXT}:generateContent`, {
+    method: 'POST', headers: { 'x-goog-api-key': key, 'Content-Type': 'application/json' }, body: JSON.stringify(body) }, 'gemini');
   const j = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(friendly('gemini', r.status, j?.error?.message));
   const txt = (j.candidates || []).flatMap((c) => (c.content?.parts || []).map((x) => x.text || '')).join('');
@@ -312,8 +324,8 @@ export async function generateImage(prompt, images, opts = {}) {
     fd.append('n', '1');
     if (opts.transparent) fd.append('background', 'transparent');
     parts.forEach((b, i) => fd.append('image[]', b, `im${i}.jpg`));
-    const r = await fetch('https://api.openai.com/v1/images/edits', {
-      method: 'POST', headers: { Authorization: 'Bearer ' + key }, body: fd });
+    const r = await post('https://api.openai.com/v1/images/edits', {
+      method: 'POST', headers: { Authorization: 'Bearer ' + key }, body: fd }, 'openai');
     const j = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(friendly('openai', r.status, j?.error?.message));
     const bin = atob(j.data[0].b64_json);
@@ -323,8 +335,8 @@ export async function generateImage(prompt, images, opts = {}) {
 
   const body = { contents: [{ parts: [{ text: prompt }] }] };
   for (const b of parts) body.contents[0].parts.push({ inlineData: { mimeType: 'image/jpeg', data: await blobToB64(b) } });
-  const r = await fetch(`${geminiBase(key)}/${GEMINI_IMAGE}:generateContent`, {
-    method: 'POST', headers: { 'x-goog-api-key': key, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const r = await post(`${geminiBase(key)}/${GEMINI_IMAGE}:generateContent`, {
+    method: 'POST', headers: { 'x-goog-api-key': key, 'Content-Type': 'application/json' }, body: JSON.stringify(body) }, 'gemini');
   const j = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(friendly('gemini', r.status, j?.error?.message));
   for (const c of j.candidates || []) for (const part of c.content?.parts || []) {
