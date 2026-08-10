@@ -1,0 +1,101 @@
+[
+ {
+  "id": "demo_top_1",
+  "label": "Cardigan Snoopy",
+  "category": "upper",
+  "file": "media/top_1.png",
+  "color": "#A2A8B0",
+  "color_name": "grigio melange",
+  "material": "maglia di cotone, media pesantezza",
+  "silhouette": "dritto, manica lunga",
+  "construction": "scollo a V, cinque bottoni"
+ },
+ {
+  "id": "demo_top_2",
+  "label": "Canotta Snoopy",
+  "category": "upper",
+  "file": "media/top_2.png",
+  "color": "#F1EADA",
+  "color_name": "panna",
+  "material": "maglia fine di cotone",
+  "silhouette": "smanicata, aderente",
+  "construction": "scollo tondo, bordi a costine rosa"
+ },
+ {
+  "id": "demo_top_3",
+  "label": "Jersey 95",
+  "category": "upper",
+  "file": "media/top_3.png",
+  "color": "#4F2A18",
+  "color_name": "marrone cacao",
+  "material": "jersey pesante con inserti in rete",
+  "silhouette": "oversize, spalle scese",
+  "construction": "scollo a V con costine, numero stampato"
+ },
+ {
+  "id": "demo_top_4",
+  "label": "T-shirt Rhude",
+  "category": "upper",
+  "file": "media/top_4.png",
+  "color": "#171819",
+  "color_name": "nero",
+  "material": "jersey di cotone",
+  "silhouette": "regular, manica corta",
+  "construction": "girocollo, stampa circolare sul petto"
+ },
+ {
+  "id": "demo_dress_2",
+  "label": "Abito lime",
+  "category": "overall",
+  "file": "media/dress_2.png",
+  "color": "#DBE040",
+  "color_name": "verde lime",
+  "material": "jersey lucido drappeggiato",
+  "silhouette": "fasciante, monospalla",
+  "construction": "drappeggio sul davanti"
+ },
+ {
+  "id": "demo_dress_3",
+  "label": "Abito crochet",
+  "category": "overall",
+  "file": "media/dress_3.png",
+  "color": "#EDDEC4",
+  "color_name": "crema",
+  "material": "crochet di cotone",
+  "silhouette": "dritto, corto",
+  "construction": "manica corta, bottoni gioiello, tasche applicate"
+ },
+ {
+  "id": "demo_kit_lower_1",
+  "label": "Pantaloni bianchi",
+  "category": "lower",
+  "file": "media/kit_lower_1.png",
+  "color": "#F2EBE2",
+  "color_name": "bianco panna",
+  "material": "",
+  "silhouette": "",
+  "construction": ""
+ },
+ {
+  "id": "demo_kit_lower_4",
+  "label": "Jeans",
+  "category": "lower",
+  "file": "media/kit_lower_4.png",
+  "color": "#356182",
+  "color_name": "blu denim",
+  "material": "",
+  "silhouette": "",
+  "construction": ""
+ },
+ {
+  "id": "demo_kit_upper_5",
+  "label": "Maglione blu",
+  "category": "upper",
+  "file": "media/kit_upper_5.png",
+  "color": "#2A3449",
+  "color_name": "blu notte",
+  "material": "",
+  "silhouette": "",
+  "construction": ""
+ }
+]

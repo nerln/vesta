@@ -1,0 +1,629 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Vesta</title>
+<meta name="theme-color" content="#16130F" />
+<link rel="icon" type="image/png" href="favicon.png" />
+<link rel="manifest" href="app.webmanifest" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<style>
+:root{
+  --ground:#16130F; --surface:#1F1A15; --surface-2:#292219; --sunk:#100D0A;
+  --line:#383026; --line-soft:#261F19;
+  --ink:#F4EDE2; --ink-2:#B6A88F; --ink-3:#7E7263;
+  --brass:#C6963F; --brass-soft:#6B5223; --glow:rgba(198,150,63,.16);
+  --ok:#87A97F; --err:#C4664F; --err-bg:#2A1713;
+  --f-display:Didot,"Bodoni 72","Bodoni MT",Georgia,serif;
+  --f-ui:"Avenir Next","Avenir","Helvetica Neue",system-ui,-apple-system,sans-serif;
+  --f-num:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --pad:18px; --r:4px;
+  --sh-art:drop-shadow(0 18px 28px rgba(0,0,0,.55)) drop-shadow(0 2px 4px rgba(0,0,0,.4));
+  --sh-pop:0 24px 70px rgba(0,0,0,.65);
+  --spring:cubic-bezier(.22,1.2,.36,1); --out:cubic-bezier(.16,1,.3,1);
+}
+:root[data-theme="light"]{
+  --ground:#E9E6DF; --surface:#F6F4EF; --surface-2:#EEEBE3; --sunk:#DEDAD1;
+  --line:#CFC8BA; --line-soft:#E0DACE; --ink:#191510; --ink-2:#5B5245; --ink-3:#8B8073;
+  --brass:#9A6E1E; --brass-soft:#E4D3AE; --glow:rgba(154,110,30,.12);
+  --err:#9B3C28; --err-bg:#F4E2DC;
+  --sh-art:drop-shadow(0 14px 22px rgba(40,30,15,.16)); --sh-pop:0 24px 60px rgba(40,30,15,.22);
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--ground);color:var(--ink);font-family:var(--f-ui);
+  font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;overscroll-behavior:none}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:200;opacity:.5;
+  background-image:var(--grain);background-size:180px;mix-blend-mode:overlay}
+button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:pointer;
+  -webkit-tap-highlight-color:transparent}
+img{-webkit-user-drag:none;user-select:none}
+:focus-visible{outline:1.5px solid var(--brass);outline-offset:3px}
+.meta{font-family:var(--f-num);font-size:10px;text-transform:uppercase;letter-spacing:.14em;color:var(--ink-3)}
+
+/* ---------- struttura ---------- */
+.app{display:flex;flex-direction:column;height:100dvh;overflow:hidden}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px var(--pad);
+  border-bottom:1px solid var(--line-soft);flex:none}
+.wm{font-family:var(--f-display);font-size:23px;letter-spacing:.02em}
+.switch{display:flex;gap:2px;background:var(--sunk);border:1px solid var(--line);border-radius:99px;padding:3px}
+.switch button{padding:7px 14px;border-radius:99px;font-size:12.5px;color:var(--ink-3);
+  transition:color .2s var(--out),background .3s var(--out)}
+.switch button[aria-pressed="true"]{background:var(--surface-2);color:var(--ink)}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--ink-3);flex:none}
+.dot.on{background:var(--ok)} .dot.warn{background:var(--brass)}
+main{flex:1;overflow:auto;-webkit-overflow-scrolling:touch}
+.view{padding:var(--pad);max-width:1400px;margin:0 auto;width:100%;animation:in .4s var(--out) both}
+@keyframes in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* ---------- camerino ---------- */
+.room{display:grid;gap:18px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:960px){
+  /* la colonna sinistra e' larga quanto il palco: niente vuoto fra figura e guardaroba */
+  .room{grid-template-columns:auto minmax(340px,1fr);gap:32px;align-items:start}
+  .left{width:calc(66dvh * 3 / 4)}
+}
+.stage{position:relative;aspect-ratio:3/4;max-height:56dvh;margin-inline:auto;border:1px solid var(--line-soft);border-radius:6px;
+  overflow:hidden;background:radial-gradient(90% 60% at 50% 6%,var(--surface),var(--sunk) 72%);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05),inset 0 -60px 90px -60px rgba(0,0,0,.85);
+  transition:box-shadow .3s var(--out),border-color .3s var(--out)}
+@media(min-width:960px){ .stage{max-height:66dvh} }
+.stage.hot{border-color:var(--brass);box-shadow:0 0 0 1px var(--brass),inset 0 0 60px var(--glow)}
+.stage::before{content:"";position:absolute;top:0;left:12%;right:12%;height:1px;z-index:4;
+  background:linear-gradient(90deg,transparent,var(--brass),transparent);opacity:.55}
+.fig{position:relative;height:100%;max-height:100%;max-width:100%;flex:none;z-index:1}
+.fig>.base{display:block;width:100%;height:100%;object-fit:contain}
+.spot{position:absolute;left:50%;bottom:-6%;width:78%;height:26%;transform:translateX(-50%);z-index:0;
+  background:radial-gradient(50% 50% at 50% 50%,var(--glow),transparent 72%);pointer-events:none}
+.layer{position:absolute;object-fit:contain;object-position:center top;filter:var(--sh-art);pointer-events:none;z-index:2;
+  animation:drop .5s var(--spring) both}
+.layer.shoes{object-position:center bottom}
+@keyframes drop{from{opacity:0;transform:translateY(-14px) scale(1.03)}to{opacity:1;transform:none}}
+.tag{position:absolute;top:10px;left:10px;z-index:5;font-family:var(--f-num);font-size:9px;
+  text-transform:uppercase;letter-spacing:.14em;color:var(--ink-2);background:rgba(0,0,0,.4);
+  border:1px solid var(--line-soft);border-radius:2px;padding:5px 8px;backdrop-filter:blur(8px)}
+:root[data-theme="light"] .tag{background:rgba(255,255,255,.6)}
+.stage .corner{position:absolute;top:8px;right:8px;z-index:5;display:flex;gap:6px}
+.empty-fig{text-align:center;padding:24px;z-index:1}
+.empty-fig svg{opacity:.22}
+.developing{animation:dev .9s var(--out) both}
+@keyframes dev{from{opacity:0;filter:blur(16px) saturate(.5)}60%{opacity:1}to{opacity:1;filter:none}}
+
+.slots{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:12px}
+.slot{position:relative;aspect-ratio:1;border:1px solid var(--line-soft);border-radius:var(--r);
+  background:var(--sunk);display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:4px;color:var(--ink-3);transition:transform .3s var(--spring),border-color .25s var(--out)}
+.slot.full{border-color:var(--line);background:var(--surface);color:var(--ink-2)}
+.slot.pop{animation:pop .45s var(--spring)}
+@keyframes pop{0%{transform:scale(.86)}60%{transform:scale(1.06)}100%{transform:scale(1)}}
+.slot img{width:100%;height:64%;min-width:0;object-fit:contain;filter:drop-shadow(0 4px 8px rgba(0,0,0,.45))}
+.slot .k{font-family:var(--f-num);font-size:8.5px;text-transform:uppercase;letter-spacing:.12em}
+.slot .x{position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;
+  background:var(--surface-2);border:1px solid var(--line);font-size:12px;display:flex;
+  align-items:center;justify-content:center;color:var(--ink-2)}
+
+.rail{display:flex;gap:10px;overflow-x:auto;padding:4px 2px 10px;scrollbar-width:none}
+.rail::-webkit-scrollbar{display:none}
+@media(min-width:960px){ .rail{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));overflow:visible} }
+.card{flex:0 0 auto;width:104px;text-align:left;touch-action:pan-y}
+@media(min-width:960px){ .card{width:auto} }
+.card .art{position:relative;aspect-ratio:4/5;border:1px solid var(--line-soft);border-radius:var(--r);
+  background:radial-gradient(120% 80% at 50% 18%,var(--surface-2),var(--surface) 55%,var(--sunk));
+  overflow:hidden;display:flex;align-items:center;justify-content:center;
+  transition:border-color .3s var(--out),transform .3s var(--spring)}
+.card:active .art{transform:scale(.96)}
+.card:hover .art{border-color:var(--brass-soft)}
+.card .art img{width:100%;height:100%;min-width:0;object-fit:contain;padding:12%;filter:var(--sh-art);
+  transition:transform .4s var(--out)}
+.card:hover .art img{transform:translateY(-4px)}
+.card .n{font-family:var(--f-display);font-size:13.5px;margin-top:6px;line-height:1.25;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card.dragging .art{opacity:.35}
+.ghost{position:fixed;z-index:300;pointer-events:none;width:120px;height:120px;object-fit:contain;
+  filter:var(--sh-art);transform-origin:center;will-change:transform}
+
+.chips{display:flex;gap:7px;overflow-x:auto;padding:2px 0 12px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;border:1px solid var(--line);border-radius:99px;padding:6px 13px;font-size:12px;
+  color:var(--ink-2);transition:all .2s var(--out)}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--ground);border-color:var(--ink)}
+.chip .n{font-family:var(--f-num);font-size:9.5px;opacity:.6;margin-left:6px}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--line);
+  border-radius:99px;padding:11px 18px;font-size:14px;min-height:44px;
+  transition:transform .18s var(--spring),background .2s var(--out),border-color .2s var(--out),opacity .2s}
+.btn:hover{border-color:var(--ink-3);background:var(--surface)}
+.btn:active{transform:scale(.96)}
+.btn.primary{background:var(--ink);color:var(--ground);border-color:var(--ink);font-weight:500}
+.btn.primary:hover{background:#fff;border-color:#fff}
+.btn.small{padding:7px 13px;min-height:36px;font-size:12.5px}
+.btn.wide{width:100%}
+.btn[disabled]{opacity:.35;pointer-events:none}
+.sub{font-family:var(--f-num);font-size:10.5px;color:var(--ink-3);text-align:center;margin-top:8px;
+  letter-spacing:.06em}
+.field{width:100%;background:var(--sunk);border:1px solid var(--line);border-radius:var(--r);
+  padding:11px 12px;font-size:14px;min-height:44px}
+.field:focus{outline:none;border-color:var(--brass)}
+
+/* ---------- griglia guardaroba ---------- */
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+@media(min-width:640px){ .grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:18px} }
+@media(min-width:1024px){ .grid{grid-template-columns:repeat(5,minmax(0,1fr))} }
+.title{font-family:var(--f-display);font-size:clamp(26px,4vw,34px);font-weight:400;margin:6px 0 2px;
+  letter-spacing:-.01em}
+.hint{font-size:12.5px;color:var(--ink-3);max-width:60ch}
+.empty{border:1px dashed var(--line);border-radius:6px;padding:40px 22px;text-align:center;color:var(--ink-2);
+  background:linear-gradient(var(--surface),var(--sunk))}
+
+/* ---------- coda, avvisi, fogli ---------- */
+.queue{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom));
+  z-index:120;display:flex;flex-direction:column;gap:8px;align-items:center;width:min(560px,92vw)}
+.job{width:100%;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;
+  box-shadow:var(--sh-pop);padding:11px 14px;display:flex;align-items:center;gap:11px;font-size:13px;
+  animation:up .35s var(--spring) both}
+@keyframes up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.job .bar{flex:1;min-width:0;height:2px;background:var(--line);border-radius:2px;overflow:hidden}
+.job .bar i{display:block;height:100%;background:var(--brass);box-shadow:0 0 8px var(--brass);
+  transition:width .9s linear}
+.job.err{border-color:var(--err);background:var(--err-bg)}
+.pulse{width:7px;height:7px;border-radius:50%;background:var(--brass);animation:pl 1.5s ease-in-out infinite}
+@keyframes pl{0%,100%{opacity:.3;transform:scale(.8)}50%{opacity:1;transform:scale(1)}}
+
+.veil{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(3px);z-index:140;
+  animation:fade .28s var(--out) both}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:141;background:var(--surface);
+  border-top:1px solid var(--line);border-radius:16px 16px 0 0;max-height:90dvh;overflow:auto;
+  box-shadow:var(--sh-pop);padding:10px var(--pad) calc(30px + env(safe-area-inset-bottom));
+  animation:sheetin .42s var(--out) both}
+@keyframes sheetin{from{transform:translateY(101%)}to{transform:none}}
+@media(min-width:960px){ .sheet{top:0;bottom:0;left:auto;width:min(440px,92vw);max-height:100dvh;
+  border-radius:0;border-left:1px solid var(--line);animation:sidein .42s var(--out) both}
+  @keyframes sidein{from{transform:translateX(101%)}to{transform:none}} }
+.sheet h2{font-family:var(--f-display);font-weight:400;font-size:22px;margin:0}
+.sheet-h{display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;
+  background:var(--surface);padding:12px 0;border-bottom:1px solid var(--line-soft);margin-bottom:14px;z-index:2}
+.row{display:flex;align-items:center;gap:10px;min-width:0}
+.dl dt{font-family:var(--f-num);font-size:9.5px;text-transform:uppercase;letter-spacing:.14em;
+  color:var(--ink-3);margin-top:12px}
+.dl dd{margin:3px 0 0;font-size:13.5px;color:var(--ink-2)}
+.err-box{background:var(--err-bg);color:var(--err);border-radius:var(--r);padding:11px 13px;font-size:13px;
+  margin:10px 0;border:1px solid color-mix(in srgb,var(--err) 30%,transparent)}
+.hidden-file{position:absolute;width:1px;height:1px;opacity:0}
+.skel{background:linear-gradient(100deg,var(--surface) 30%,var(--surface-2) 50%,var(--surface) 70%);
+  background-size:220% 100%;animation:sk 1.5s linear infinite;border-radius:var(--r)}
+@keyframes sk{to{background-position:-220% 0}}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script type="module">
+import { h, render } from 'https://esm.sh/preact@10.23.1';
+import { useState, useEffect, useRef, useCallback } from 'https://esm.sh/preact@10.23.1/hooks';
+import htm from 'https://esm.sh/htm@3.1.1';
+import * as V from './vesta-core.js';
+const html = htm.bind(h);
+
+/* grana */
+(function(){ const n=180,c=document.createElement('canvas');c.width=c.height=n;
+  const x=c.getContext('2d'),d=x.createImageData(n,n);
+  for(let i=0;i<d.data.length;i+=4){const v=200+Math.random()*55;
+    d.data[i]=d.data[i+1]=d.data[i+2]=v;d.data[i+3]=Math.random()*22;}
+  x.putImageData(d,0,0);
+  document.documentElement.style.setProperty('--grain',`url(${c.toDataURL()})`); })();
+
+const buzz = (ms=8)=>{ try{ navigator.vibrate && navigator.vibrate(ms); }catch(e){} };
+const SLOTS=[['upper','Sopra'],['lower','Sotto'],['overall','Intero'],['shoes','Scarpe']];
+const FALLBACK_ANCHORS={upper:[.20,.20,.80,.58],lower:[.22,.48,.78,.96],overall:[.18,.19,.82,.92],
+  outerwear:[.16,.19,.84,.64],shoes:[.32,.88,.68,1],accessory:[.40,.09,.60,.28]};
+const Z={overall:2,upper:3,outerwear:4,lower:1,shoes:1,accessory:5};
+const urlOf=(g)=> g.url || (g.blob ? (g._u ||= URL.createObjectURL(g.blob)) : g.file);
+
+function App(){
+  const [view,setView]=useState('camerino');
+  const [garments,setGarments]=useState([]);
+  const [demo,setDemo]=useState([]);
+  const [person,setPerson]=useState(null);
+  const [analysis,setAnalysis]=useState(null);
+  const [anchors,setAnchors]=useState(null);
+  const [figAR,setFigAR]=useState('3/4');
+  const [slots,setSlots]=useState({});
+  const [look,setLook]=useState(null);
+  const [looks,setLooks]=useState([]);
+  const [jobs,setJobs]=useState([]);
+  const [sheet,setSheet]=useState(null);
+  const [filter,setFilter]=useState('all');
+  const [ready,setReady]=useState(V.settings.ready);
+  const [theme,setTheme]=useState(localStorage.getItem('vw.theme')||'dark');
+  const [popped,setPopped]=useState(null);
+  const stageRef=useRef(null);
+
+  useEffect(()=>{ document.documentElement.dataset.theme=theme; localStorage.setItem('vw.theme',theme); },[theme]);
+  useEffect(()=>{ (async()=>{
+    const [g,l,meta]=await Promise.all([V.store.all('garments'),V.store.all('looks'),V.store.get('meta','person')]);
+    setGarments(g||[]); setLooks(l||[]);
+    if(meta){ setPerson(meta); setAnalysis(meta.analysis||null); setAnchors(meta.anchors||null); }
+    try{ const d=await (await fetch('media/demo.json')).json(); setDemo(d.map(x=>({...x,demo:true}))); }catch(e){}
+  })(); },[]);
+
+  const all=[...garments,...demo];
+  const shown=filter==='all'?all:all.filter(g=>g.category===filter);
+  const counts=all.reduce((a,g)=>{a[g.category]=(a[g.category]||0)+1;return a;},{});
+  const filled=Object.entries(slots).filter(([k,v])=>v);
+
+  const job=(label)=>{ const id='j'+Date.now()+Math.random();
+    setJobs(j=>[...j,{id,label,t0:Date.now(),sec:0,est:25}]); return id; };
+  const jobDone=(id,err)=>{ if(err){ setJobs(j=>j.map(x=>x.id===id?{...x,err,done:true}:x));
+      setTimeout(()=>setJobs(j=>j.filter(x=>x.id!==id)),9000); }
+    else setJobs(j=>j.filter(x=>x.id!==id)); };
+  useEffect(()=>{ if(!jobs.length) return;
+    const t=setInterval(()=>setJobs(j=>j.map(x=>x.done?x:{...x,sec:Math.round((Date.now()-x.t0)/1000)})),1000);
+    return ()=>clearInterval(t); },[jobs.length]);
+
+  /* ---------------- capi ---------------- */
+  function place(g){
+    const cat=g.category==='outerwear'?'upper':(g.category==='accessory'?'upper':g.category);
+    setSlots(s=>{ const n={...s,[cat]:g};
+      if(cat==='overall'){ n.upper=null; n.lower=null; }
+      if(cat==='upper'||cat==='lower') n.overall=null;
+      return n; });
+    setLook(null); setPopped(cat); setTimeout(()=>setPopped(null),450); buzz();
+  }
+  async function addPhotos(files){
+    const list=[...files].slice(0,8);
+    if(!list.length) return;
+    setSheet(null);
+    if(!V.settings.ready){ setSheet({k:'chiave',why:'Per estrarre i capi dalle foto serve una chiave.'}); return; }
+    for(const f of list){
+      const id=job('Cerco i capi nella foto');
+      try{
+        const small=await V.downscale(f,1400);
+        const inv=await V.visionJSON(V.INVENTORY_PROMPT,[small],V.INVENTORY_SCHEMA);
+        const items=(inv.items||[]).filter(i=>Array.isArray(i.bbox)&&i.bbox.length===4);
+        jobDone(id);
+        for(const it of items) extractOne(small,it);
+      }catch(e){ jobDone(id,e.message); }
+    }
+  }
+  async function extractOne(photo,it){
+    const id=job('Ricostruisco: '+(it.label||'capo'));
+    try{
+      const crop=await V.cropSquare(photo,it.bbox);
+      let best=null;
+      for(const key of [V.pickKey(it.color_hex),'#ff00ff','#0000ff']){
+        const raw=await V.generateImage(V.reconstructPrompt(it,key),[crop],{size:'1024x1024'});
+        const bmp=await createImageBitmap(raw);
+        const cv=V.canvasOf(bmp.width,bmp.height); cv.getContext('2d').drawImage(bmp,0,0);
+        const cut=V.trimAlpha(V.stripChroma(cv,key));
+        const q=V.checkCutout(cut);
+        best={cut,q};
+        if(q.ok) break;
+      }
+      const blob=await V.toBlob(best.cut);
+      const rec={id:'g'+Date.now()+Math.random().toString(16).slice(2,6),
+        label:it.label||'Capo', category:it.category||'upper', blob,
+        color:it.color_hex||V.dominantHex(best.cut), color_name:it.color_name||'',
+        material:it.material||'', silhouette:it.silhouette||'', construction:it.construction||'',
+        description:it.description||'', qa:best.q, created:Date.now()};
+      await V.store.put('garments',rec);
+      setGarments(g=>[...g,rec]); jobDone(id); buzz(14);
+    }catch(e){ jobDone(id,e.message); }
+  }
+  async function setPersonPhoto(file){
+    const id=job('Preparo la figura');
+    try{
+      const blob=await V.downscale(file,1200);
+      const rec={id:'person',blob,created:Date.now()};
+      await V.store.put('meta',rec); setPerson(rec); setLook(null);
+      if(V.settings.ready){
+        const info=await V.visionJSON(V.PERSON_PROMPT,[blob],V.PERSON_SCHEMA);
+        const a={upper:info.upper,lower:info.lower,shoes:(info.shoes||[]).some(Boolean)?info.shoes:null};
+        const rec2={...rec,anchors:a,analysis:info};
+        await V.store.put('meta',rec2); setPerson(rec2); setAnchors(a); setAnalysis(info);
+        if(info.palette?.[0]) document.documentElement.style.setProperty('--glow',info.palette[0]+'2b');
+      }
+      jobDone(id);
+    }catch(e){ jobDone(id,e.message); }
+  }
+  async function develop(){
+    if(!person){ setSheet({k:'figura'}); return; }
+    if(!V.settings.ready){ setSheet({k:'chiave',why:'Per generare la prova serve una chiave.'}); return; }
+    const items=['overall','outerwear','upper','lower','shoes'].map(k=>slots[k]).filter(Boolean);
+    if(!items.length) return;
+    const id=job('Sviluppo il look');
+    try{
+      const imgs=[person.blob];
+      for(const it of items) imgs.push(it.blob||await (await fetch(urlOf(it))).blob());
+      const out=await V.generateImage(V.tryonPrompt(items),imgs,{size:'1024x1536'});
+      setLook(URL.createObjectURL(out)); jobDone(id); buzz(20);
+    }catch(e){ jobDone(id,e.message); }
+  }
+  async function saveLook(){
+    if(!look) return;
+    const blob=await (await fetch(look)).blob();
+    const rec={id:'l'+Date.now(),blob,created:Date.now(),items:filled.map(([k,v])=>v.label)};
+    await V.store.put('looks',rec); setLooks(l=>[...l,rec]); buzz(14);
+  }
+
+  /* ---------------- trascinamento ---------------- */
+  const drag=useRef(null);
+  const onCardDown=(g)=>(e)=>{
+    if(e.button!==undefined&&e.button!==0) return;
+    const card=e.currentTarget; const img=card.querySelector('img');
+    const ghost=document.createElement('img');
+    ghost.src=img.src; ghost.className='ghost';
+    ghost.style.left='0px'; ghost.style.top='0px';
+    const move=(x,y)=>{ ghost.style.transform=`translate(${x-60}px,${y-60}px) scale(1.05)`; };
+    move(e.clientX,e.clientY);
+    document.body.appendChild(ghost);
+    card.classList.add('dragging');
+    drag.current={g,ghost,card,moved:false};
+    card.setPointerCapture?.(e.pointerId);
+  };
+  const onCardMove=(e)=>{
+    const d=drag.current; if(!d) return;
+    d.moved=true;
+    d.ghost.style.transform=`translate(${e.clientX-60}px,${e.clientY-60}px) scale(1.05)`;
+    const st=stageRef.current;
+    if(st){ const r=st.getBoundingClientRect();
+      const over=e.clientX>r.left&&e.clientX<r.right&&e.clientY>r.top&&e.clientY<r.bottom;
+      st.classList.toggle('hot',over); }
+  };
+  const onCardUp=(e)=>{
+    const d=drag.current; if(!d) return;
+    drag.current=null;
+    d.card.classList.remove('dragging');
+    const st=stageRef.current;
+    let dropped=false;
+    if(st){ const r=st.getBoundingClientRect();
+      dropped=e.clientX>r.left&&e.clientX<r.right&&e.clientY>r.top&&e.clientY<r.bottom;
+      st.classList.remove('hot'); }
+    if(dropped||!d.moved) place(d.g);
+    d.ghost.style.transition='opacity .25s, transform .25s';
+    d.ghost.style.opacity='0';
+    setTimeout(()=>d.ghost.remove(),260);
+  };
+
+  /* ---------------- viste ---------------- */
+  const figStyle=`aspect-ratio:${figAR}`;
+  const onFig=e=>{ const i=e.target; if(i.naturalWidth) setFigAR(i.naturalWidth+'/'+i.naturalHeight); };
+  const anchorOf=(cat)=>{ const a=anchors||{};
+    const m=cat==='outerwear'?a.upper:a[cat];
+    return (m&&m.length===4)?m:(FALLBACK_ANCHORS[cat]||FALLBACK_ANCHORS.upper); };
+
+  const stage=html`
+    <div class="stage" ref=${stageRef}>
+      <div class="spot"></div>
+      ${look?html`<div class="fig" style=${figStyle}>
+            <img class="base developing" key=${look} src=${look} alt="Il tuo look" /></div>`
+        : person?html`<div class="fig" style=${figStyle}>
+            <img class="base" src=${urlOf(person)} alt="La tua figura" onLoad=${onFig} />
+            ${filled.map(([k,g])=>{ const a=anchorOf(g.category);
+              // il capo riempie l'appiglio senza deformarsi e resta appeso dall'alto (le scarpe da sotto)
+              return html`<img class="layer ${g.category}" key=${g.id} src=${urlOf(g)} alt=""
+                style=${`left:${a[0]*100}%;top:${a[1]*100}%;width:${(a[2]-a[0])*100}%;height:${(a[3]-a[1])*100}%;z-index:${Z[g.category]||2}`} />`; })}
+          </div>`
+        : html`<div class="empty-fig">
+            <svg viewBox="0 0 100 200" width="110" height="220" aria-hidden="true">
+              <circle cx="50" cy="26" r="18" fill="currentColor"/>
+              <path d="M28 50h44l8 60H20zM30 110h16l-4 78H26zM54 110h16l4 78H58z" fill="currentColor"/></svg>
+            <p class="hint" style="margin:14px auto 12px">Aggiungi una tua foto: i capi si appoggeranno addosso.</p>
+            <button class="btn primary" onClick=${()=>setSheet({k:'figura'})}>Aggiungi la figura</button>
+          </div>`}
+      <span class="tag">${look?'Prova generata':filled.length?'Montaggio':'Camerino'}</span>
+      <div class="corner">
+        ${look?html`<button class="btn small" onClick=${()=>setLook(null)}>Originale</button>`:null}
+        ${person?html`<button class="btn small" onClick=${()=>setSheet({k:'figura'})}>Cambia</button>`:null}
+      </div>
+    </div>`;
+
+  const camerino=html`
+    <div class="view">
+      <div class="room">
+        <div class="left">
+          ${stage}
+          <div class="slots">
+            ${SLOTS.map(([k,l])=>{ const g=slots[k];
+              return html`<button class=${'slot'+(g?' full':'')+(popped===k?' pop':'')}
+                onClick=${()=>g?null:setView('guardaroba')} title=${l}>
+                ${g?html`<img src=${urlOf(g)} alt="" />`:html`<span style="font-size:17px">+</span>`}
+                <span class="k">${l}</span>
+                ${g?html`<span class="x" onClick=${(e)=>{e.stopPropagation();setSlots(s=>({...s,[k]:null}));setLook(null);buzz();}}>×</span>`:null}
+              </button>`; })}
+          </div>
+          <div class="row" style="margin-top:12px;gap:8px;flex-wrap:wrap">
+            <button class="btn primary" style="flex:1;min-width:180px" disabled=${!filled.length} onClick=${develop}>
+              Sviluppa il look</button>
+            ${filled.length?html`<button class="btn small" onClick=${()=>{setSlots({});setLook(null);buzz();}}>Svuota</button>`:null}
+            ${look?html`<button class="btn small" onClick=${saveLook}>Salva</button>`:null}
+            ${look?html`<a class="btn small" href=${look} download="vesta-look.png">Esporta</a>`:null}
+          </div>
+          <div class="sub">${ready?'Con la tua chiave · circa 20 s':'Montaggio istantaneo · per la prova vera serve una chiave'}</div>
+        </div>
+
+        <div>
+          <div class="row" style="justify-content:space-between;margin-bottom:8px">
+            <span class="meta">Trascina un capo sulla figura</span>
+            <button class="btn small" onClick=${()=>setSheet({k:'importa'})}>+ Capi</button>
+          </div>
+          <div class="chips">
+            <button class="chip" aria-pressed=${filter==='all'} onClick=${()=>setFilter('all')}>Tutti<span class="n">${all.length}</span></button>
+            ${Object.entries(V.CATS).filter(([k])=>counts[k]).map(([k,l])=>html`
+              <button class="chip" aria-pressed=${filter===k} onClick=${()=>setFilter(k)}>${l}<span class="n">${counts[k]}</span></button>`)}
+          </div>
+          <div class="rail">
+            ${shown.map(g=>html`
+              <button class="card" key=${g.id} onPointerDown=${onCardDown(g)} onPointerMove=${onCardMove}
+                onPointerUp=${onCardUp} onPointerCancel=${onCardUp}
+                onContextMenu=${(e)=>{e.preventDefault();setSheet({k:'capo',g});}}>
+                <div class="art"><img src=${urlOf(g)} alt=${g.label} draggable="false" /></div>
+                <div class="n">${g.label}</div>
+              </button>`)}
+          </div>
+        </div>
+      </div>
+    </div>`;
+
+  const guardaroba=html`
+    <div class="view">
+      <h1 class="title">Guardaroba</h1>
+      <div class="meta">${all.length} capi${garments.length?` · ${garments.length} tuoi`:''}</div>
+      <div class="chips" style="margin-top:14px">
+        <button class="chip" aria-pressed=${filter==='all'} onClick=${()=>setFilter('all')}>Tutti<span class="n">${all.length}</span></button>
+        ${Object.entries(V.CATS).filter(([k])=>counts[k]).map(([k,l])=>html`
+          <button class="chip" aria-pressed=${filter===k} onClick=${()=>setFilter(k)}>${l}<span class="n">${counts[k]}</span></button>`)}
+      </div>
+      ${shown.length?html`<div class="grid">
+        ${shown.map(g=>html`<button class="card" key=${g.id} style="width:auto"
+            onClick=${()=>{place(g);setView('camerino');}} onContextMenu=${(e)=>{e.preventDefault();setSheet({k:'capo',g});}}>
+          <div class="art"><img src=${urlOf(g)} alt=${g.label} draggable="false" /></div>
+          <div class="n">${g.label}</div>
+          <div class="meta" style="margin-top:2px">${g.color_name||V.CATS[g.category]||''}</div>
+        </button>`)}
+      </div>`:html`<div class="empty"><p>Nessun capo in questa categoria.</p>
+        <button class="btn primary" onClick=${()=>setSheet({k:'importa'})}>Aggiungi capi da una foto</button></div>`}
+    </div>`;
+
+  const lookbook=html`
+    <div class="view">
+      <h1 class="title">Lookbook</h1>
+      <div class="meta">${looks.length} look salvati</div>
+      ${looks.length?html`<div class="grid" style="margin-top:16px">
+        ${looks.slice().reverse().map((l,i)=>html`<div class="card" style="width:auto" key=${l.id}>
+          <div class="art"><img src=${URL.createObjectURL(l.blob)} alt="" /></div>
+          <div class="n">Look ${looks.length-i}</div>
+          <div class="row" style="gap:6px;margin-top:6px">
+            <a class="btn small" href=${URL.createObjectURL(l.blob)} download=${l.id+'.png'}>Esporta</a>
+            <button class="btn small" onClick=${async()=>{await V.store.del('looks',l.id);setLooks(await V.store.all('looks'));}}>Elimina</button>
+          </div>
+        </div>`)}
+      </div>`:html`<div class="empty">Nessun look salvato. Componi un outfit e sviluppalo.</div>`}
+    </div>`;
+
+  return html`
+    <div class="app">
+      <div class="top">
+        <span class="wm">Vesta</span>
+        <div class="switch">
+          ${[['camerino','Camerino'],['guardaroba','Guardaroba'],['lookbook','Lookbook']].map(([k,l])=>html`
+            <button aria-pressed=${view===k} onClick=${()=>{setView(k);buzz(5);}}>${l}</button>`)}
+        </div>
+        <button class="row" style="gap:7px" onClick=${()=>setSheet({k:'chiave'})} aria-label="Impostazioni">
+          <span class=${'dot'+(ready?' on':' warn')}></span>
+          <span class="meta" style="display:none">chiave</span>
+        </button>
+      </div>
+      <main>${view==='camerino'?camerino:view==='guardaroba'?guardaroba:lookbook}</main>
+
+      ${jobs.length?html`<div class="queue">
+        ${jobs.map(j=>html`<div class=${'job'+(j.err?' err':'')} key=${j.id}>
+          ${j.err?html`<span>⚠︎</span><span style="flex:1">${j.err}</span>
+            <button class="btn small" onClick=${()=>jobDone(j.id)}>Ok</button>`
+           :html`<span class="pulse"></span><span>${j.label}</span>
+            <span class="bar"><i style=${`width:${Math.min(96,j.sec/j.est*100)}%`}></i></span>
+            <span class="meta">${j.sec}s</span>`}
+        </div>`)}
+      </div>`:null}
+
+      ${sheet?html`<${Sheet} sheet=${sheet} close=${()=>setSheet(null)} ctx=${{
+        addPhotos,setPersonPhoto,setReady,theme,setTheme,analysis,person,
+        removeGarment:async(g)=>{ await V.store.del('garments',g.id); setGarments(x=>x.filter(y=>y.id!==g.id)); },
+        place,setView}} />`:null}
+    </div>`;
+}
+
+function Sheet({sheet,close,ctx}){
+  const k=sheet.k;
+  const [prov,setProv]=useState(V.settings.provider);
+  const [key,setKey]=useState('');
+  const stop=(e)=>e.stopPropagation();
+  const head=(t)=>html`<div class="sheet-h"><h2>${t}</h2>
+    <button class="btn small" onClick=${close}>Chiudi</button></div>`;
+
+  if(k==='importa') return html`<div class="veil" onClick=${close}><div class="sheet" onClick=${stop}>
+    ${head('Aggiungi capi')}
+    <p class="hint" style="margin-bottom:14px">Fotografa i vestiti, anche indossati. Ogni capo viene
+      ricostruito come immagine di catalogo e ritagliato su fondo trasparente.</p>
+    <label class="btn wide" style="margin-bottom:8px">Scatta una foto
+      <input class="hidden-file" type="file" accept="image/*" capture="environment"
+        onChange=${e=>ctx.addPhotos(e.target.files)} /></label>
+    <label class="btn wide">Dal rullino o da file
+      <input class="hidden-file" type="file" accept="image/*" multiple
+        onChange=${e=>ctx.addPhotos(e.target.files)} /></label>
+    <p class="hint" style="margin-top:12px">Fino a 8 foto per volta. Serve una chiave: ogni capo costa
+      circa 4 centesimi con Gemini.</p>
+  </div></div>`;
+
+  if(k==='figura') return html`<div class="veil" onClick=${close}><div class="sheet" onClick=${stop}>
+    ${head('La tua figura')}
+    <p class="hint" style="margin-bottom:14px">Una foto in piedi, a figura intera, ben illuminata.
+      Resta sul tuo dispositivo: non viene caricata da nessuna parte finche' non generi una prova.</p>
+    <label class="btn wide" style="margin-bottom:8px">Scegli una foto
+      <input class="hidden-file" type="file" accept="image/*"
+        onChange=${e=>{const f=e.target.files[0]; if(f){close();ctx.setPersonPhoto(f);}}} /></label>
+    <label class="btn wide" style="margin-bottom:8px">Scatta ora
+      <input class="hidden-file" type="file" accept="image/*" capture="user"
+        onChange=${e=>{const f=e.target.files[0]; if(f){close();ctx.setPersonPhoto(f);}}} /></label>
+    <button class="btn wide" onClick=${async()=>{ close();
+      ctx.setPersonPhoto(await (await fetch('media/figura.png')).blob()); }}>Usa una figura di esempio</button>
+  </div></div>`;
+
+  if(k==='capo'){ const g=sheet.g;
+    return html`<div class="veil" onClick=${close}><div class="sheet" onClick=${stop}>
+      ${head(g.label)}
+      <div class="art" style="aspect-ratio:4/5;background:var(--sunk);border:1px solid var(--line-soft);
+        border-radius:4px;display:flex;align-items:center;justify-content:center;overflow:hidden">
+        <img src=${urlOf(g)} style="width:100%;height:100%;object-fit:contain;padding:10%;filter:var(--sh-art)" /></div>
+      <dl class="dl">
+        ${g.color_name?html`<dt>Colore</dt><dd>${g.color_name}</dd>`:null}
+        ${g.material?html`<dt>Osservato</dt><dd>${[g.material,g.silhouette,g.construction].filter(Boolean).join(' · ')}</dd>`:null}
+        ${g.description?html`<dt>Nota</dt><dd>${g.description}</dd>`:null}
+        ${g.qa&&!g.qa.ok?html`<dt>Da rivedere</dt><dd>${g.qa.problems.join(', ')}</dd>`:null}
+      </dl>
+      <div class="row" style="margin-top:16px;gap:8px">
+        <button class="btn primary" onClick=${()=>{ctx.place(g);ctx.setView('camerino');close();}}>Mettilo addosso</button>
+        ${!g.demo?html`<button class="btn" onClick=${async()=>{await ctx.removeGarment(g);close();}}>Elimina</button>`:null}
+      </div>
+    </div></div>`;
+  }
+
+  return html`<div class="veil" onClick=${close}><div class="sheet" onClick=${stop}>
+    ${head('Chiave e aspetto')}
+    ${sheet.why?html`<div class="err-box">${sheet.why}</div>`:null}
+    <p class="hint" style="margin-bottom:12px">Vesta gira tutta nel browser. Per generare servono i
+      modelli: metti la tua chiave, resta solo su questo dispositivo e le richieste partono da qui.</p>
+    <div class="switch" style="margin-bottom:12px">
+      ${[['gemini','Google Gemini'],['openai','OpenAI']].map(([p,l])=>html`
+        <button aria-pressed=${prov===p} onClick=${()=>{setProv(p);V.settings.provider=p;setKey('');}}>${l}</button>`)}
+    </div>
+    <div class="row">
+      <input class="field" type="password" autocomplete="off" value=${key}
+        placeholder=${V.settings.keyFor(prov)?'configurata':(prov==='openai'?'sk-…':'AIza…')}
+        onInput=${e=>setKey(e.target.value)} />
+      <button class="btn" onClick=${()=>{ V.settings.provider=prov; V.settings.key=key.trim();
+        ctx.setReady(V.settings.ready); setKey(''); }}>Salva</button>
+    </div>
+    <p class="hint" style="margin-top:8px">
+      ${prov==='gemini'?'Chiave da aistudio.google.com. Le immagini richiedono la fatturazione attiva, circa 0,04 $ ciascuna.'
+        :'Chiave da platform.openai.com. Circa 0,07–0,25 $ a immagine.'}</p>
+    <div class="sheet-h" style="margin-top:22px"><h2 style="font-size:18px">Aspetto</h2></div>
+    <div class="switch">
+      ${[['dark','Camerino'],['light','Giorno']].map(([t,l])=>html`
+        <button aria-pressed=${ctx.theme===t} onClick=${()=>ctx.setTheme(t)}>${l}</button>`)}
+    </div>
+    ${ctx.analysis?html`<div style="margin-top:20px">
+      <div class="meta">La tua stagione</div>
+      <div style="font-family:var(--f-display);font-size:20px;margin:4px 0 8px">${ctx.analysis.season}</div>
+      <div class="row" style="gap:6px">${(ctx.analysis.palette||[]).map(c=>html`
+        <span style=${`width:22px;height:22px;border-radius:50%;background:${c};box-shadow:inset 0 0 0 1px rgba(128,128,128,.4)`}></span>`)}</div>
+      <p class="hint" style="margin-top:8px">${ctx.analysis.advice||''}</p>
+    </div>`:null}
+  </div></div>`;
+}
+
+render(html`<${App} />`, document.getElementById('app'));
+</script>
+</body>
+</html>
