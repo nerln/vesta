@@ -1,11 +1,19 @@
 {
   "name": "Vesta",
   "short_name": "Vesta",
-  "description": "Il camerino che hai in casa",
+  "description": "Virtual wardrobe that runs in your browser",
   "start_url": "app.html",
   "scope": ".",
   "display": "standalone",
   "background_color": "#16130F",
   "theme_color": "#16130F",
-  "icons": [{ "src": "favicon.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }]
+  "icons": [
+    {
+      "src": "favicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "lang": "en"
 }

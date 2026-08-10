@@ -70,104 +70,6 @@ export async function cropSquare(blob, box, pad = 0.12, side = 1024) {
   return c;
 }
 
-/* -------------------------------------------------- rimozione del fondo chroma
-   Stessa logica del motore Python: chiave misurata sul bordo, alpha come massimo
-   fra distanza e cromaticita', solo il fondo collegato al bordo diventa
-   trasparente, colore ricostruito sui bordi e despill in una fascia stretta. */
-const T_TRA = 12, T_OPA = 220, K_LO = .25, K_HI = .80, SPILL = 8;
-const smooth = (x) => { x = Math.min(1, Math.max(0, x)); return x * x * (3 - 2 * x); };
-export const hexRgb = (h) => { h = (h || '').replace('#', '');
-  return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16) || 0); };
-
-export function pickKey(colorHex) {
-  const keys = { '#00ff00': [0, 255, 0], '#ff00ff': [255, 0, 255], '#0000ff': [0, 0, 255] };
-  if (!colorHex) return '#00ff00';
-  const g = hexRgb(colorHex);
-  let best = '#00ff00', bd = -1;
-  for (const k in keys) { const v = keys[k];
-    const d = Math.hypot(v[0] - g[0], v[1] - g[1], v[2] - g[2]);
-    if (d > bd) { bd = d; best = k; } }
-  return best;
-}
-function axis(key) {
-  const thr = Math.max(Math.max(...key) * .5, 40);
-  const pos = [0, 1, 2].filter((i) => key[i] >= thr);
-  const neg = [0, 1, 2].filter((i) => !pos.includes(i));
-  return pos.length && neg.length ? [pos, neg] : [[1], [0, 2]];
-}
-/** Da immagine su fondo pieno a canvas RGBA trasparente. */
-export function stripChroma(src, keyHex) {
-  const w = src.width, h = src.height;
-  const g = src.getContext ? src.getContext('2d') : null;
-  const cv = g ? src : (() => { const c = canvasOf(w, h); c.getContext('2d').drawImage(src, 0, 0); return c; })();
-  const ctx = cv.getContext('2d');
-  const img = ctx.getImageData(0, 0, w, h), d = img.data;
-
-  // chiave misurata: la mediana delle fasce di bordo
-  const band = Math.max(2, Math.min(12, (h / 8) | 0, (w / 8) | 0));
-  const samp = [[], [], []];
-  const push = (x, y) => { const i = (y * w + x) * 4; samp[0].push(d[i]); samp[1].push(d[i + 1]); samp[2].push(d[i + 2]); };
-  for (let y = 0; y < band; y++) for (let x = 0; x < w; x += 2) { push(x, y); push(x, h - 1 - y); }
-  for (let x = 0; x < band; x++) for (let y = 0; y < h; y += 2) { push(x, y); push(w - 1 - x, y); }
-  const med = samp.map((a) => { a.sort((p, q) => p - q); return a[a.length >> 1] || 0; });
-  const declared = keyHex ? hexRgb(keyHex) : null;
-  const [pos, neg] = axis(declared || med);
-  const keyness = Math.min(...pos.map((i) => med[i])) - Math.max(...neg.map((i) => med[i]));
-  const key = keyness >= 30 ? med : (declared || med);
-  const keyScore = Math.max(Math.min(...pos.map((i) => key[i])) - Math.max(...neg.map((i) => key[i])), 1);
-
-  const alpha = new Float32Array(w * h);
-  for (let p = 0, i = 0; p < w * h; p++, i += 4) {
-    const r = d[i], gg = d[i + 1], b = d[i + 2];
-    const dist = Math.hypot(r - key[0], gg - key[1], b - key[2]);
-    const aDist = smooth((dist - T_TRA) / (T_OPA - T_TRA));
-    const px = [r, gg, b];
-    const score = Math.min(...pos.map((k) => px[k])) - Math.max(...neg.map((k) => px[k]));
-    const aKey = 1 - smooth((score / keyScore - K_LO) / (K_HI - K_LO));
-    alpha[p] = Math.max(aDist, aKey);
-  }
-
-  // fondo = solo cio' che e' collegato al bordo (un dettaglio verde interno resta)
-  const bg = new Uint8Array(w * h);
-  const q = new Int32Array(w * h); let qs = 0, qe = 0;
-  const seed = (p) => { if (!bg[p] && alpha[p] < .5) { bg[p] = 1; q[qe++] = p; } };
-  for (let x = 0; x < w; x++) { seed(x); seed((h - 1) * w + x); }
-  for (let y = 0; y < h; y++) { seed(y * w); seed(y * w + w - 1); }
-  while (qs < qe) {
-    const p = q[qs++], x = p % w, y = (p / w) | 0;
-    if (x > 0) seed(p - 1); if (x < w - 1) seed(p + 1);
-    if (y > 0) seed(p - w); if (y < h - 1) seed(p + w);
-  }
-
-  // fascia di bordo per il despill
-  const edge = new Uint8Array(w * h);
-  for (let p = 0; p < w * h; p++) if (bg[p]) {
-    const x = p % w, y = (p / w) | 0;
-    for (let dy = -SPILL; dy <= SPILL; dy++) for (let dx = -SPILL; dx <= SPILL; dx++) {
-      const nx = x + dx, ny = y + dy;
-      if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
-      const np = ny * w + nx; if (!bg[np]) edge[np] = 1;
-    }
-  }
-
-  for (let p = 0, i = 0; p < w * h; p++, i += 4) {
-    let a = bg[p] ? alpha[p] : 1;
-    a = Math.min(1, Math.max(0, a));
-    if (a > .15 && a < .995) {   // colore ricostruito togliendo il fondo
-      for (let k = 0; k < 3; k++)
-        d[i + k] = Math.min(255, Math.max(0, (d[i + k] - (1 - a) * key[k]) / a));
-    }
-    if (edge[p] || (a > .05 && a < .995)) {  // despill solo lungo il contorno
-      const cap = Math.max(...neg.map((k) => d[i + k]));
-      for (const k of pos) d[i + k] = Math.min(d[i + k], cap);
-    }
-    d[i + 3] = Math.round(a * 255);
-    if (d[i + 3] === 0) { d[i] = d[i + 1] = d[i + 2] = 0; }
-  }
-  const out = canvasOf(w, h);
-  out.getContext('2d').putImageData(img, 0, 0);
-  return out;
-}
 /** Ritaglia sul contenuto opaco lasciando un margine. */
 export function trimAlpha(canvas, pad = .06) {
   const w = canvas.width, h = canvas.height;
@@ -205,279 +107,136 @@ export function dominantHex(canvas) {
   const med = [0, 1, 2].map((k) => { const a = px.map((p) => p[k]).sort((x, y) => x - y); return a[a.length >> 1]; });
   return '#' + med.map((v) => v.toString(16).padStart(2, '0')).join('');
 }
+/* -------------------------------------------- ritaglio dal fondo tinta unita
+   Nessun modello, nessuna chiamata di rete, nessuna chiave: il fondo viene
+   misurato sul bordo dell'immagine e tolto dove e' collegato al bordo. Funziona
+   su una foto scattata contro un muro, un lenzuolo o un piano di colore uniforme,
+   e non solo su un fondo chroma. Su uno sfondo mosso non funziona, e lo dice. */
+const F_LO = 20, F_HI = 74;
+const smooth = (x) => { x = Math.min(1, Math.max(0, x)); return x * x * (3 - 2 * x); };
 
-/* ------------------------------------------------------------------ modelli */
-export const settings = {
-  get provider() { return localStorage.getItem('vw.provider') || 'gemini'; },
-  set provider(v) { localStorage.setItem('vw.provider', v); },
-  get key() { return localStorage.getItem('vw.key.' + this.provider) || ''; },
-  set key(v) { v ? localStorage.setItem('vw.key.' + this.provider, v) : localStorage.removeItem('vw.key.' + this.provider); },
-  keyFor(p) { return localStorage.getItem('vw.key.' + p) || ''; },
-  get ready() { return !!this.key; },
-};
-
-const GEMINI_TEXT = 'gemini-2.5-flash';
-const GEMINI_IMAGE = 'gemini-2.5-flash-image';
-const OPENAI_TEXT = 'gpt-4.1-mini';
-const OPENAI_IMAGE = 'gpt-image-1';
-const geminiBase = (k) => k.startsWith('AQ.')
-  ? 'https://aiplatform.googleapis.com/v1/publishers/google/models'
-  : 'https://generativelanguage.googleapis.com/v1beta/models';
-
-function friendly(provider, status, msg) {
-  const m = (msg || '').slice(0, 200);
-  if (provider === 'gemini') {
-    if (status === 429 && /free_tier/.test(m))
-      return 'La chiave gratuita di Gemini non include la generazione di immagini. Attiva la fatturazione su aistudio.google.com: circa 0,04 $ a immagine.';
-    if (status === 400 && /API key not valid/i.test(m)) return 'Chiave Gemini non valida.';
-    if (status === 401 || status === 403)
-      return 'Gemini rifiuta la chiave. Le chiavi che iniziano con AQ. sono di Vertex express e spesso non sono abilitate: creane una che inizia con AIza.';
+/** Le componenti di fondo raggiungibili dal bordo: un dettaglio interno dello
+ *  stesso colore del muro resta al suo posto invece di bucare il capo. */
+function borderConnected(alpha, w, h, soglia = .5) {
+  const bg = new Uint8Array(w * h);
+  const q = new Int32Array(w * h);
+  let qs = 0, qe = 0;
+  const seed = (p) => { if (!bg[p] && alpha[p] < soglia) { bg[p] = 1; q[qe++] = p; } };
+  for (let x = 0; x < w; x++) { seed(x); seed((h - 1) * w + x); }
+  for (let y = 0; y < h; y++) { seed(y * w); seed(y * w + w - 1); }
+  while (qs < qe) {
+    const p = q[qs++], x = p % w, y = (p / w) | 0;
+    if (x > 0) seed(p - 1);
+    if (x < w - 1) seed(p + 1);
+    if (y > 0) seed(p - w);
+    if (y < h - 1) seed(p + w);
   }
-  if (status === 401) return 'Chiave non valida.';
-  if (status === 429) return 'Troppe richieste, riprova fra poco.';
-  return `${provider}: errore ${status}. ${m}`;
-}
-/** Il browser blocca le chiamate a OpenAI: l'header Authorization fa scattare un preflight
- *  che api.openai.com non autorizza. Qui il muro diventa un messaggio comprensibile. */
-export const OPENAI_NEL_BROWSER = false;
-async function post(url, init, provider) {
-  try { return await fetch(url, init); }
-  catch (e) {
-    if (provider === 'openai') throw new Error(
-      'OpenAI non accetta chiamate dirette da una pagina web: il browser le blocca prima di partire. '
-      + 'Qui usa Gemini, oppure la versione con il backend sul tuo Mac.');
-    throw new Error('Rete non raggiungibile. Controlla la connessione e riprova.');
-  }
-}
-const blobToB64 = (blob) => new Promise((res, rej) => {
-  const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1]); r.onerror = rej; r.readAsDataURL(blob);
-});
-/** Immagine pronta per l'API: sempre JPEG, trasparenza appiattita su bianco (mai su nero). */
-const toJpeg = async (x) => {
-  const bmp = x instanceof Blob ? await createImageBitmap(x) : x;
-  const s = Math.min(1, 1280 / Math.max(bmp.width, bmp.height));
-  const c = canvasOf(Math.round(bmp.width * s), Math.round(bmp.height * s));
-  const g = c.getContext('2d');
-  g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
-  g.drawImage(bmp, 0, 0, c.width, c.height);
-  return toBlob(c, 'image/jpeg', .92);
-};
-
-/** Interroga un modello con visione e ottiene JSON. */
-export async function visionJSON(prompt, images, schema) {
-  const p = settings.provider, key = settings.key;
-  if (!key) throw new Error('Serve una chiave per questa funzione.');
-  const parts = [];
-  for (const im of images) parts.push(await toJpeg(im));
-
-  if (p === 'openai') {
-    const content = [{ type: 'text', text: prompt }];
-    for (const b of parts) content.push({ type: 'image_url', image_url: { url: 'data:image/jpeg;base64,' + await blobToB64(b) } });
-    const r = await post('https://api.openai.com/v1/chat/completions', {
-      method: 'POST', headers: { Authorization: 'Bearer ' + key, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: OPENAI_TEXT, messages: [{ role: 'user', content }],
-        response_format: { type: 'json_schema', json_schema: { name: 'out', strict: true, schema } } }),
-    }, 'openai');
-    const j = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(friendly('openai', r.status, j?.error?.message));
-    return JSON.parse(j.choices[0].message.content);
-  }
-
-  const body = { contents: [{ parts: [{ text: prompt }] }],
-    generationConfig: { responseMimeType: 'application/json', responseSchema: toGeminiSchema(schema) } };
-  for (const b of parts) body.contents[0].parts.push({ inlineData: { mimeType: 'image/jpeg', data: await blobToB64(b) } });
-  const r = await post(`${geminiBase(key)}/${GEMINI_TEXT}:generateContent`, {
-    method: 'POST', headers: { 'x-goog-api-key': key, 'Content-Type': 'application/json' }, body: JSON.stringify(body) }, 'gemini');
-  const j = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(friendly('gemini', r.status, j?.error?.message));
-  const txt = (j.candidates || []).flatMap((c) => (c.content?.parts || []).map((x) => x.text || '')).join('');
-  if (!txt.trim()) throw new Error('Il modello non ha risposto.');
-  return JSON.parse(txt);
-}
-function toGeminiSchema(n) {
-  if (!n || typeof n !== 'object') return n;
-  const o = {};
-  for (const k in n) {
-    if (k === 'additionalProperties') continue;
-    if (k === 'type') o.type = String(n[k]).toUpperCase();
-    else if (k === 'properties') { o.properties = {}; for (const p in n[k]) o.properties[p] = toGeminiSchema(n[k][p]); }
-    else if (k === 'items') o.items = toGeminiSchema(n[k]);
-    else o[k] = n[k];
-  }
-  return o;
+  return bg;
 }
 
-/** Genera o modifica un'immagine. Restituisce un Blob PNG. */
-export async function generateImage(prompt, images, opts = {}) {
-  const p = settings.provider, key = settings.key;
-  if (!key) throw new Error('Serve una chiave per generare.');
-  const parts = [];
-  for (const im of images) parts.push(await toJpeg(im));
+/** Il colore del fondo, come mediana delle quattro fasce di bordo. */
+function borderMedian(d, w, h) {
+  const band = Math.max(2, Math.min(14, (h / 8) | 0, (w / 8) | 0));
+  const s = [[], [], []];
+  const push = (x, y) => { const i = (y * w + x) * 4; s[0].push(d[i]); s[1].push(d[i + 1]); s[2].push(d[i + 2]); };
+  for (let y = 0; y < band; y++) for (let x = 0; x < w; x += 2) { push(x, y); push(x, h - 1 - y); }
+  for (let x = 0; x < band; x++) for (let y = 0; y < h; y += 2) { push(x, y); push(w - 1 - x, y); }
+  const med = s.map((a) => { a.sort((p, q) => p - q); return a[a.length >> 1] || 0; });
+  const spread = s.map((a) => a[(a.length * .9) | 0] - a[(a.length * .1) | 0]);
+  return { med, uniforme: Math.max(...spread) };
+}
 
-  if (p === 'openai') {
-    const fd = new FormData();
-    fd.append('model', OPENAI_IMAGE);
-    fd.append('prompt', prompt);
-    fd.append('size', opts.size || '1024x1024');
-    fd.append('quality', opts.quality || 'high');
-    fd.append('input_fidelity', 'high');
-    fd.append('n', '1');
-    if (opts.transparent) fd.append('background', 'transparent');
-    parts.forEach((b, i) => fd.append('image[]', b, `im${i}.jpg`));
-    const r = await post('https://api.openai.com/v1/images/edits', {
-      method: 'POST', headers: { Authorization: 'Bearer ' + key }, body: fd }, 'openai');
-    const j = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(friendly('openai', r.status, j?.error?.message));
-    const bin = atob(j.data[0].b64_json);
-    const u8 = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
-    return new Blob([u8], { type: 'image/png' });
+/**
+ * Toglie il fondo tinta unita da una foto. Restituisce { canvas, sfondo, uniforme }.
+ * `uniforme` e' quanto varia il bordo: sopra i 60 circa il fondo non e' tinta unita
+ * e il ritaglio non e' affidabile.
+ */
+export function stripFlat(src) {
+  const w = src.width, h = src.height;
+  const cv = src.getContext ? src : (() => {
+    const c = canvasOf(w, h); c.getContext('2d').drawImage(src, 0, 0); return c;
+  })();
+  const ctx = cv.getContext('2d');
+  const img = ctx.getImageData(0, 0, w, h), d = img.data;
+  const { med, uniforme } = borderMedian(d, w, h);
+
+  const alpha = new Float32Array(w * h);
+  for (let p = 0, i = 0; p < w * h; p++, i += 4) {
+    const dist = Math.hypot(d[i] - med[0], d[i + 1] - med[1], d[i + 2] - med[2]);
+    alpha[p] = smooth((dist - F_LO) / (F_HI - F_LO));
   }
+  const bg = borderConnected(alpha, w, h);
 
-  const body = { contents: [{ parts: [{ text: prompt }] }] };
-  for (const b of parts) body.contents[0].parts.push({ inlineData: { mimeType: 'image/jpeg', data: await blobToB64(b) } });
-  const r = await post(`${geminiBase(key)}/${GEMINI_IMAGE}:generateContent`, {
-    method: 'POST', headers: { 'x-goog-api-key': key, 'Content-Type': 'application/json' }, body: JSON.stringify(body) }, 'gemini');
-  const j = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(friendly('gemini', r.status, j?.error?.message));
-  for (const c of j.candidates || []) for (const part of c.content?.parts || []) {
-    const blob = part.inlineData || part.inline_data;
-    if (blob?.data) {
-      const bin = atob(blob.data);
-      const u8 = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
-      return new Blob([u8], { type: 'image/png' });
+  for (let p = 0, i = 0; p < w * h; p++, i += 4) {
+    const a = bg[p] ? Math.min(1, Math.max(0, alpha[p])) : 1;
+    if (a > .15 && a < .995) {  // colore ricostruito togliendo il fondo dal bordo sfumato
+      for (let k = 0; k < 3; k++) d[i + k] = Math.min(255, Math.max(0, (d[i + k] - (1 - a) * med[k]) / a));
     }
+    d[i + 3] = Math.round(a * 255);
+    if (d[i + 3] === 0) { d[i] = d[i + 1] = d[i + 2] = 0; }
   }
-  throw new Error('Nessuna immagine nella risposta: forse il contenuto e stato bloccato.');
+  const out = canvasOf(w, h);
+  out.getContext('2d').putImageData(img, 0, 0);
+  return {
+    canvas: out,
+    sfondo: '#' + med.map((v) => v.toString(16).padStart(2, '0')).join(''),
+    uniforme: Math.round(uniforme),
+    contrasto: Math.round(centroVsFondo(src.getContext ? src : cv, med)),
+  };
 }
 
-/* ------------------------------------------------------------------ prompt */
+/** Quanto il centro dell'immagine si stacca dal fondo. Sotto i 45 circa il capo
+ *  ha lo stesso colore del muro e il metodo a distanza di colore se lo mangia:
+ *  meglio dirlo che consegnare un ritaglio bucato. */
+function centroVsFondo(cv, med) {
+  const w = cv.width, h = cv.height;
+  const x0 = (w * .3) | 0, y0 = (h * .3) | 0, cw = Math.max(1, (w * .4) | 0), ch = Math.max(1, (h * .4) | 0);
+  const d = cv.getContext('2d').getImageData(x0, y0, cw, ch).data;
+  const c = [[], [], []];
+  for (let p = 0; p < cw * ch; p += 5) { const i = p * 4; c[0].push(d[i]); c[1].push(d[i + 1]); c[2].push(d[i + 2]); }
+  const m = c.map((a) => { a.sort((p, q) => p - q); return a[a.length >> 1] || 0; });
+  return Math.hypot(m[0] - med[0], m[1] - med[1], m[2] - med[2]);
+}
+
+/** Se l'immagine ha gia' un canale alfa vero non c'e' niente da togliere. */
+export function hasAlpha(canvas) {
+  const w = canvas.width, h = canvas.height;
+  const d = canvas.getContext('2d').getImageData(0, 0, w, h).data;
+  let trasparenti = 0;
+  for (let p = 0; p < w * h; p += 3) if (d[p * 4 + 3] < 250) trasparenti++;
+  return trasparenti / (w * h / 3) > .02;
+}
+
+/* ------------------------------------------------------------------- composizione
+   Il montaggio che si vede sul palco, reso in un PNG vero: stessa geometria,
+   stessi appigli, tutto su tela e senza uscire dal dispositivo. */
+export async function composeLook(personBlob, strati, lato = 1400) {
+  const base = await createImageBitmap(personBlob);
+  const s = Math.min(1, lato / Math.max(base.width, base.height));
+  const w = Math.round(base.width * s), h = Math.round(base.height * s);
+  const c = canvasOf(w, h);
+  const g = c.getContext('2d');
+  g.drawImage(base, 0, 0, w, h);
+  for (const { blob, url, box } of strati) {
+    const bmp = await toBitmap(blob || url);
+    const bx = box[0] * w, by = box[1] * h;
+    const bw = (box[2] - box[0]) * w, bh = (box[3] - box[1]) * h;
+    const k = Math.min(bw / bmp.width, bh / bmp.height);   // contain, appeso dall'alto
+    const dw = bmp.width * k, dh = bmp.height * k;
+    g.drawImage(bmp, bx + (bw - dw) / 2, by, dw, dh);
+  }
+  return c;
+}
+
 export const CATS = { upper: 'Sopra', lower: 'Sotto', overall: 'Interi', outerwear: 'Capispalla', shoes: 'Scarpe', accessory: 'Accessori' };
 
-const ITEM_PROPS = {
-  slug: { type: 'string' }, label: { type: 'string' },
-  category: { type: 'string', enum: Object.keys(CATS) },
-  bbox: { type: 'array', items: { type: 'number' } },
-  color_name: { type: 'string' }, color_hex: { type: 'string' },
-  material: { type: 'string' }, silhouette: { type: 'string' }, construction: { type: 'string' },
-  pattern: { type: 'string' }, graphic_policy: { type: 'string', enum: ['exact', 'mark-only', 'omit'] },
-  graphic_text: { type: 'string' }, unknowns: { type: 'string' },
-  confidence: { type: 'string', enum: ['high', 'medium', 'low'] }, description: { type: 'string' },
-};
-export const INVENTORY_SCHEMA = {
-  type: 'object', additionalProperties: false, required: ['items'],
-  properties: { items: { type: 'array', items: {
-    type: 'object', additionalProperties: false, required: Object.keys(ITEM_PROPS), properties: ITEM_PROPS } } },
-};
-export const INVENTORY_PROMPT = `You are cataloguing the garments visible in this photograph for a wardrobe app.
-
-List every deliberately worn or displayed garment: tops, bottoms, dresses, outerwear, shoes and
-notable accessories. Ignore anything that is not clothing. At most 6 items, most prominent first.
-If a garment is mostly hidden or you cannot tell what type it is, leave it out.
-
-Report ONLY what is visible:
-- slug: short lowercase-hyphenated english id
-- label: short ITALIAN label, max 3 words
-- category: upper, lower, overall, outerwear, shoes or accessory
-- bbox: [left, top, right, bottom] floats 0..1, tight around the garment
-- color_name: plain english colour; color_hex: dominant fabric colour as #rrggbb
-- material, silhouette, construction, pattern: what you can actually see
-- graphic_policy: exact if text is fully legible, mark-only if a graphic is visible but unreadable,
-  otherwise omit; graphic_text: the legible text or empty
-- unknowns: attributes you cannot see; confidence: high, medium or low
-- description: one factual sentence in Italian
-
-Never guess brands, logos, pockets or fasteners that are not clearly visible: prefer omission over
-invention. Return JSON only.`;
-
-export const PERSON_SCHEMA = {
-  type: 'object', additionalProperties: false,
-  required: ['upper', 'lower', 'shoes', 'skin_hex', 'hair_hex', 'season', 'undertone', 'palette', 'advice'],
-  properties: {
-    upper: { type: 'array', items: { type: 'number' } },
-    lower: { type: 'array', items: { type: 'number' } },
-    shoes: { type: 'array', items: { type: 'number' } },
-    skin_hex: { type: 'string' }, hair_hex: { type: 'string' },
-    season: { type: 'string', enum: ['Primavera', 'Estate', 'Autunno', 'Inverno'] },
-    undertone: { type: 'string', enum: ['caldo', 'freddo', 'neutro'] },
-    palette: { type: 'array', items: { type: 'string' } },
-    advice: { type: 'string' },
-  },
-};
-export const PERSON_PROMPT = `Look at this photograph of a person and return JSON.
-
-1. Bounding boxes as [left, top, right, bottom], floats 0..1 of the whole image:
-   - upper: the torso area where a top would sit, from shoulders to hips, including the arms
-   - lower: from the waist to the ankles
-   - shoes: the feet; if the feet are not visible use [0,0,0,0]
-2. skin_hex: the average skin colour of the face as #rrggbb
-   hair_hex: the hair colour as #rrggbb
-3. Judge the person's seasonal colour type (Primavera, Estate, Autunno, Inverno) and undertone.
-4. palette: exactly 5 hex colours that suit this person, as #rrggbb
-5. advice: one short sentence in Italian about which colours suit them.
-
-Return JSON only.`;
-
-export function reconstructPrompt(item, chromaHex) {
-  const framing = {
-    upper: 'straight front view, neck opening centred, both sleeves complete, cuffs and full hem visible',
-    outerwear: 'straight front view, collar centred, both sleeves complete, closure and full hem visible',
-    lower: 'straight front view, waistband at the top, both legs complete and parallel, both hems visible',
-    overall: 'straight front view, neckline at the top, the full length of the garment, complete hem',
-    shoes: 'the matched pair side by side, three quarter view from slightly above',
-    accessory: 'the complete item, long axis aligned with the canvas, both ends visible',
-  }[item.category] || 'straight front view, the complete item';
-  const chroma = { '#00ff00': 'pure saturated green', '#ff00ff': 'pure saturated magenta', '#0000ff': 'pure saturated blue' }[chromaHex] || 'pure saturated green';
-  const facts = [];
-  if (item.color_name) facts.push('colour: ' + item.color_name);
-  if (item.material) facts.push('material: ' + item.material);
-  if (item.silhouette) facts.push('silhouette: ' + item.silhouette);
-  if (item.construction) facts.push('construction: ' + item.construction);
-  if (item.pattern) facts.push('pattern: ' + item.pattern);
-  const graphic = item.graphic_policy === 'exact' && item.graphic_text
-    ? `Reproduce the visible graphic exactly, including the text "${item.graphic_text}".`
-    : item.graphic_policy === 'mark-only'
-      ? 'A graphic is visible but not legible: render it as an abstract mark with the same shape and colours, no lettering.'
-      : 'Omit all logos, lettering and branding: none is clearly readable in the source.';
-  const unknowns = item.unknowns ? `Not visible in the source: ${item.unknowns}. Resolve in the plainest way and add no detail.` : '';
-
-  return `Use case: background-extraction
-Asset type: transparent ecommerce clothing catalog cutout, generated first on a removable chroma key
-
-Input image: the reference photograph shows the exact same ${item.label} worn by a person. Use it only
-to identify and reconstruct that single item. Do not mix in details from any other clothing.
-
-Primary request: Reconstruct ONLY the complete empty ${item.label} as a clean ecommerce catalog product
-photograph: ${framing}. Remove the wearer, body, skin, hair, every other garment and the whole scene.
-Show the complete unoccluded item, naturally and symmetrically arranged, as if laid flat and steamed,
-with no person, mannequin or hanger.
-
-Item fidelity: preserve exactly what the source supports - ${facts.join('; ')}. ${graphic} ${unknowns}
-Do not invent any other logo, lettering, label, pocket, seam, fastener, hardware, colour or decoration.
-
-Composition: square canvas, item centred and complete inside the frame with generous even padding on
-every side; nothing cropped or touching an edge.
-
-Background: perfectly flat, absolutely uniform solid ${chroma} (${chromaHex}) from edge to edge. Exactly
-one colour: no shadow, gradient, texture, vignette, floor, reflection or lighting variation.
-
-Lighting: neutral diffuse product lighting on the item only; no cast shadow, contact shadow, reflection,
-prop, watermark, caption or border.
-
-Critical: use no ${chroma} anywhere on the item itself; keep a crisp separable outer silhouette; output
-exactly one item.`;
-}
-
-export function tryonPrompt(items) {
-  const list = items.map((i) => {
-    const f = [i.color_name, i.material, i.silhouette].filter(Boolean).join(', ');
-    return `- ${i.label}${f ? ` (${f})` : ''}`;
-  }).join('\n');
-  return `Photorealistic virtual try-on. The first image is the person. The following images are garments
-shown as catalog cutouts. Dress the person in these garments:
-${list}
-
-Keep the person's face, hair, skin tone, pose, body shape and the background exactly the same. Replace
-only the corresponding clothing. Reproduce each garment faithfully: same colour, fabric, cut and details.
-Natural fabric drape and folds, consistent lighting and shadows, high detail, full body in frame.
-Do not invent logos, lettering, pockets or hardware that are not visible in the garment images.`;
+/* Le chiavi API non stanno nel browser. Questa versione non chiama nessun modello:
+   se qualcuno aveva salvato una chiave con una versione precedente, qui sparisce. */
+export function dimenticaChiavi() {
+  const via = [];
+  for (let i = localStorage.length - 1; i >= 0; i--) {
+    const k = localStorage.key(i);
+    if (k && (k.startsWith('vw.key') || k === 'vw.provider')) { localStorage.removeItem(k); via.push(k); }
+  }
+  return via;
 }

@@ -112,25 +112,26 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);color:var(--ink
   <header>
     <span class="brand">Vesta</span>
     <nav>
-      <a href="#come">Come funziona</a>
-      <a href="#motori">Motori</a>
-      <a href="#usare">Usare</a>
-      <a href="#installare">Installare</a>
+      <a href="#come" data-t="nav1">Come funziona</a>
+      <a href="#dove" data-t="nav2">Dove gira</a>
+      <a href="#installare" data-t="nav3">Installare</a>
       <a class="gh" href="https://github.com/nerln/vesta">GitHub</a>
+      <button class="lingua" id="lingua" type="button" aria-label="Language">EN</button>
     </nav>
   </header>
 
   <div class="hero">
     <div>
-      <span class="meta bassa">Guardaroba virtuale · apri e usa</span>
-      <h1>Il camerino che hai in casa.</h1>
-      <p class="lede">Fotografa i vestiti che possiedi. Vesta li ricostruisce come immagini di catalogo,
-        li cataloga da sola e te li fa provare addosso, sulla tua foto. Tutto dentro il browser.</p>
+      <span class="meta bassa" data-t="occhiello">Guardaroba virtuale · apri e usa</span>
+      <h1 data-t="titolo">Il camerino che hai in casa.</h1>
+      <p class="lede" data-t="lede">Fotografa i vestiti che possiedi, componi i look sulla tua figura e
+        tieni il guardaroba in tasca. La pagina si apre e funziona: niente account, niente chiavi,
+        nessuna foto che esce dal tuo dispositivo.</p>
       <div class="cta">
-        <a class="btn primary" href="app.html">Apri Vesta</a>
-        <a class="btn" href="https://github.com/nerln/vesta">Codice su GitHub</a>
+        <a class="btn primary" href="app.html" data-t="cta1">Apri Vesta</a>
+        <a class="btn" href="https://github.com/nerln/vesta" data-t="cta2">Codice su GitHub</a>
       </div>
-      <p class="meta bassa" style="margin-top:14px">Gira nel browser · niente da installare · le foto restano sul tuo dispositivo</p>
+      <p class="meta bassa" style="margin-top:14px" data-t="sotto-cta">Gira nel browser · niente da installare · le foto restano sul tuo dispositivo</p>
     </div>
 
     <div>
@@ -138,89 +139,62 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);color:var(--ink
         <img class="figura" src="media/figura.png" alt="Una figura in piedi nel camerino" />
         <img class="capo" id="capo" src="media/top_3.png" alt=""
              style="left:20%;top:22%;width:60%;height:38%" />
-        <span class="lab">Montaggio</span>
+        <span class="lab" data-t="etichetta">Montaggio</span>
       </div>
       <div class="picker" id="picker"></div>
-      <p class="note meta">Tocca un capo: qui è un montaggio istantaneo, nell'app diventa una prova vera</p>
+      <p class="note meta" data-t="nota-demo">Tocca un capo: è lo stesso montaggio che fa l'app</p>
     </div>
   </div>
 
   <section id="come">
-    <span class="num">Come funziona</span>
-    <h2>Dalla foto sul telefono alla scheda di catalogo.</h2>
-    <p class="sub">Il passaggio che cambia tutto non è cancellare lo sfondo: è <em>ricostruire</em> il capo.
-      Un modello lo ridisegna come foto prodotto su un fondo pieno, che poi diventa trasparenza vera.
-      Così spariscono il corpo, le pieghe da indosso e le ombre.</p>
+    <span class="num" data-t="n1">Come funziona</span>
+    <h2 data-t="h1">Il capo diventa una figurina, e la figurina si appoggia addosso.</h2>
+    <p class="sub" data-t="sub1">Ogni capo entra nel guardaroba come immagine ritagliata su fondo trasparente.
+      Da lì comporre un outfit costa zero: si trascina sulla figura, si guarda, si cambia. Quello che serve
+      per ritagliare cambia da versione a versione, ed è la sola differenza fra le due.</p>
     <div class="steps">
-      <div class="step"><span class="meta">Primo</span><b>Scatti</b>
-        <p>Carichi fino a dodici foto, anche quelle in cui sei vestito.</p></div>
-      <div class="step"><span class="meta">Secondo</span><b>Inventario</b>
-        <p>Un modello elenca i capi visibili con colore, tessuto, taglio, e ciò che non si vede.</p></div>
-      <div class="step"><span class="meta">Terzo</span><b>Ricostruzione</b>
-        <p>Ogni capo viene ridisegnato su fondo pieno e scontornato con bordo morbido.</p></div>
-      <div class="step"><span class="meta">Quarto</span><b>Prova</b>
-        <p>Componi il look e lo sviluppi sulla tua figura.</p></div>
+      <div class="step"><span class="meta" data-t="p1">Primo</span><b data-t="s1">Scatti</b>
+        <p data-t="d1">Il capo disteso su un fondo di un colore solo: un muro, un lenzuolo, un tavolo.</p></div>
+      <div class="step"><span class="meta" data-t="p2">Secondo</span><b data-t="s2">Ritaglio</b>
+        <p data-t="d2">Vesta misura il colore del bordo e lo toglie. Nel browser succede sul posto, in un decimo di secondo.</p></div>
+      <div class="step"><span class="meta" data-t="p3">Terzo</span><b data-t="s3">Composizione</b>
+        <p data-t="d3">Trascini il capo sulla figura. Il montaggio è immediato e si esporta in PNG.</p></div>
+      <div class="step"><span class="meta" data-t="p4">Quarto</span><b data-t="s4">Prova generata</b>
+        <p data-t="d4">Solo nella versione con il backend: un modello ridisegna il capo addosso a te.</p></div>
     </div>
   </section>
 
-  <section>
-    <span class="num">Cosa fa</span>
-    <h2>Non solo la prova.</h2>
+  <section id="dove">
+    <span class="num" data-t="n2">Dove gira</span>
+    <h2 data-t="h2">Due versioni, e la differenza è dove sta il modello.</h2>
     <div class="cols">
-      <div class="card"><h3>La tua stagione</h3>
-        <p>Dalla foto stima il sottotono della pelle in CIELAB e ne ricava la palette e i capi che ti stanno bene.</p></div>
-      <div class="card"><h3>Catalogato da solo</h3>
-        <p>Categoria, colore dominante e materiale vengono assegnati durante l'importazione. I doppioni
-          vengono segnalati, mai cancellati.</p></div>
-      <div class="card"><h3>Prima guardi, poi generi</h3>
-        <p>Comporre un look è immediato e gratuito. Il modello parte solo quando lo chiedi tu.</p></div>
+      <div class="card"><span class="meta" data-t="e1">Subito</span>
+        <h3 data-t="c1t">Nel browser</h3>
+        <p data-t="c1p">Apri la pagina e sei dentro. Il ritaglio dal fondo tinta unita, il montaggio sulla
+          figura e il lookbook girano tutti qui, su tela, senza rete. Nessun modello, quindi nessuna chiave
+          e nessun costo: il guardaroba resta nel dispositivo e sparisce solo se cancelli i dati del sito.</p>
+        <p style="margin-top:12px"><a class="btn" href="app.html" data-t="c1b">Apri Vesta</a></p></div>
+      <div class="card"><span class="meta" data-t="e2">Sul Mac</span>
+        <h3 data-t="c2t">Con il backend</h3>
+        <p data-t="c2p">Qui vivono i modelli. Il ritaglio diventa generativo, cioè il capo viene ridisegnato
+          come foto di catalogo invece che scontornato, e la prova viene generata davvero sulla tua figura.
+          Serve Apple Silicon e circa novanta secondi a prova, ma non esce niente dal computer.</p></div>
+      <div class="card"><span class="meta" data-t="e3">Sul telefono</span>
+        <h3 data-t="c3t">Nella schermata Home</h3>
+        <p data-t="c3p">Da iPhone la pagina si installa come un'app e si apre a schermo intero. Funziona
+          anche senza rete, perché tutto quello che le serve è già scaricato.</p></div>
     </div>
-  </section>
-
-  <section id="motori">
-    <span class="num">Motori</span>
-    <h2>Tre modi di generare.</h2>
-    <p class="sub">Si sceglie in base a cosa serve: riservatezza, costo zero, o qualità massima.</p>
-    <div class="tablewrap">
-      <table>
-        <tr><th>Motore</th><th>Dove gira</th><th>Tempo</th><th>Costo per immagine</th></tr>
-        <tr><td>Locale</td><td>Sul tuo Mac, Apple Silicon</td><td class="n">~90 s</td><td class="n">0</td></tr>
-        <tr><td>Cloud</td><td>GPU gratuita, quota limitata</td><td class="n">~25 s</td><td class="n">0</td></tr>
-        <tr><td>Premium</td><td>OpenAI o Google, con la tua chiave</td><td class="n">~15 s</td><td class="n">0,04–0,25 $</td></tr>
-      </table>
-    </div>
-    <p class="warn" style="margin-top:26px">In locale e in cloud i capi restano sul tuo computer. In premium
-      la foto viene inviata al provider che scegli: sta scritto nell'app, sotto il pulsante, ogni volta.</p>
-  </section>
-
-  <section id="usare">
-    <span class="num">Due modi</span>
-    <h2>Nel browser, o tutto sul tuo Mac.</h2>
-    <div class="cols">
-      <div class="card"><span class="meta">Subito</span>
-        <h3>Vesta nel browser</h3>
-        <p>Apri la pagina e componi i look sui capi di prova: il montaggio è istantaneo e non costa nulla.
-          Per le prove generate e per estrarre i tuoi capi metti la tua chiave Gemini: resta su questo
-          dispositivo, le richieste partono dal browser e nessun server intermedio vede le tue foto.
-          OpenAI qui non si può usare, blocca le chiamate che arrivano da una pagina web.</p>
-        <p style="margin-top:12px"><a class="btn" href="app.html">Apri Vesta</a></p></div>
-      <div class="card"><span class="meta">In locale</span>
-        <h3>Sul tuo Mac, senza chiavi</h3>
-        <p>La versione con backend usa modelli aperti che girano sul Mac: nessuna immagine esce dal
-          computer e non si paga nulla, ma serve Apple Silicon e circa novanta secondi a prova.
-          È anche l'unica strada per usare OpenAI, perché la chiamata parte dal server.</p></div>
-      <div class="card"><span class="meta">Sul telefono</span>
-        <h3>Aggiungila alla schermata Home</h3>
-        <p>Da iPhone la pagina si installa come un'app e si apre a schermo intero. Il guardaroba resta
-          salvato nel dispositivo.</p></div>
-    </div>
+    <p class="warn" style="margin-top:26px" data-t="avviso">Le chiavi delle API non stanno nel browser, e non
+      c'è nessun campo per incollarle. Se un giorno Vesta userà i modelli a pagamento, la chiave starà su un
+      server, una sola, e non nel dispositivo di chi la usa.</p>
   </section>
 
   <section id="installare">
-    <span class="num">Installare</span>
-    <h2>Serve un Mac con Apple Silicon.</h2>
-    <p class="sub">Il primo avvio scarica i modelli, circa quattro gigabyte. Dopo funziona anche senza rete,
-      in locale.</p>
+    <span class="num" data-t="n3">Installare</span>
+    <h2 data-t="h3">La versione nel browser non si installa.</h2>
+    <p class="sub" data-t="sub3">Basta aprire <a href="app.html">l'app</a>. Quella con i modelli invece serve
+      un Mac con Apple Silicon: il primo avvio scarica circa quattro gigabyte di pesi, poi funziona anche
+      senza rete.</p>
 <pre>git clone https://github.com/nerln/vesta
 cd vesta/backend
 python3.11 -m venv .venv
@@ -228,18 +202,83 @@ python3.11 -m venv .venv
 git clone https://github.com/Zheng-Chong/CatVTON
 .venv/bin/python download_weights.py
 .venv/bin/python -m uvicorn server:app --host 0.0.0.0 --port 8770</pre>
-    <p class="sub" style="margin-top:22px">Poi si apre <span class="meta">127.0.0.1:8770</span> sul Mac, oppure
-      l'indirizzo del Mac dal telefono sulla stessa rete: da iPhone si aggiunge alla schermata Home e si
-      comporta come un'app.</p>
+    <p class="sub" style="margin-top:22px" data-t="sub4">Poi si apre <span class="meta">127.0.0.1:8770</span> sul
+      Mac, oppure l'indirizzo del Mac dal telefono sulla stessa rete.</p>
   </section>
 
   <footer>
-    <span>Vibe coded da Eugenio Nerelli e Gianmattia Barone.</span>
-    <span>I motori di prova hanno licenza non commerciale.</span>
+    <span data-t="f1">Vibe coded da Eugenio Nerelli e Gianmattia Barone.</span>
+    <span data-t="f2">I motori di prova hanno licenza non commerciale.</span>
   </footer>
 </div>
 
 <script>
+/* Italiano nel markup, inglese qui: la pagina resta leggibile anche senza JS. */
+const EN={
+ "nav1": "How it works",
+ "nav2": "Where it runs",
+ "nav3": "Install",
+ "occhiello": "Virtual wardrobe · open and use",
+ "titolo": "The fitting room you already have at home.",
+ "lede": "Photograph the clothes you own, put looks together on your own figure, and carry your wardrobe in your pocket. The page opens and works: no account, no keys, no photo ever leaves your device.",
+ "cta1": "Open Vesta",
+ "cta2": "Code on GitHub",
+ "sotto-cta": "Runs in the browser · nothing to install · your photos stay on your device",
+ "etichetta": "Layout",
+ "nota-demo": "Tap a garment: this is the same layout the app makes",
+ "n1": "How it works",
+ "h1": "A garment becomes a cutout, and the cutout sits on you.",
+ "sub1": "Every garment enters the wardrobe as an image cut out on a transparent background. From there, putting an outfit together costs nothing: drag it onto the figure, look, change it. What it takes to do the cutting out is the one thing that differs between the two versions.",
+ "p1": "First",
+ "s1": "Shoot",
+ "d1": "The garment laid flat on a single-colour background: a wall, a sheet, a table.",
+ "p2": "Second",
+ "s2": "Cut out",
+ "d2": "Vesta measures the colour at the edges and removes it. In the browser this happens on the spot, in a tenth of a second.",
+ "p3": "Third",
+ "s3": "Compose",
+ "d3": "Drag the garment onto the figure. The layout is instant and exports to PNG.",
+ "p4": "Fourth",
+ "s4": "Generated try-on",
+ "d4": "Only in the version with the backend: a model redraws the garment on you.",
+ "n2": "Where it runs",
+ "h2": "Two versions, and the difference is where the model lives.",
+ "e1": "Right now",
+ "c1t": "In the browser",
+ "c1p": "Open the page and you are in. The single-colour cutout, the layout on the figure and the lookbook all run here, on canvas, with no network. No model, so no key and no cost: the wardrobe stays on the device and only disappears if you clear the site data.",
+ "c1b": "Open Vesta",
+ "e2": "On the Mac",
+ "c2t": "With the backend",
+ "c2p": "This is where the models live. The cutout becomes generative, meaning the garment is redrawn as a catalog photo rather than traced around, and the try-on is really generated on your figure. It needs Apple Silicon and about ninety seconds per try-on, but nothing leaves the computer.",
+ "e3": "On your phone",
+ "c3t": "On the Home screen",
+ "c3p": "On iPhone the page installs like an app and opens full screen. It works offline too, because everything it needs is already downloaded.",
+ "avviso": "API keys do not live in the browser, and there is no field to paste one into. If Vesta ever uses the paid models, the key will sit on a server, one of them, and not on the device of whoever is using it.",
+ "n3": "Install",
+ "h3": "The browser version needs no installing.",
+ "sub3": "Just open <a href=\"app.html\">the app</a>. The one with the models does need a Mac with Apple Silicon: the first run downloads about four gigabytes of weights, then it works offline.",
+ "sub4": "Then open <span class=\"meta\">127.0.0.1:8770</span> on the Mac, or the Mac address from your phone on the same network.",
+ "f1": "Vibe coded by Eugenio Nerelli and Gianmattia Barone.",
+ "f2": "The try-on engines are licensed for non-commercial use."
+};
+(function lingua(){
+  const btn=document.getElementById('lingua');
+  const nodi=[...document.querySelectorAll('[data-t]')];
+  nodi.forEach(n=>n.dataset.it=n.innerHTML);
+  const metti=(l)=>{
+    nodi.forEach(n=>{ const v=l==='en'?EN[n.dataset.t]:n.dataset.it; if(v!=null) n.innerHTML=v; });
+    document.documentElement.lang=l;
+    document.title=l==='en'?'Vesta, the fitting room you already have at home':'Vesta, il camerino che hai in casa';
+    btn.textContent=l==='en'?'IT':'EN';
+    btn.setAttribute('aria-label',l==='en'?'Passa all\'italiano':'Switch to English');
+    localStorage.setItem('vw.lang',l);
+  };
+  const salvata=localStorage.getItem('vw.lang');
+  metti(salvata==='it'||salvata==='en'?salvata
+    :((navigator.language||'en').toLowerCase().startsWith('it')?'it':'en'));
+  btn.onclick=()=>metti(document.documentElement.lang==='en'?'it':'en');
+})();
+
 (function grain(){
   const n=180,c=document.createElement('canvas');c.width=c.height=n;
   const x=c.getContext('2d'),d=x.createImageData(n,n);
@@ -260,7 +299,7 @@ const capo=document.getElementById('capo'), picker=document.getElementById('pick
 CAPI.forEach((c,i)=>{
   const b=document.createElement('button');
   b.className='pick'; b.setAttribute('aria-pressed', i===0?'true':'false');
-  b.setAttribute('aria-label','Prova questo capo sulla figura');
+  b.setAttribute('aria-label',document.documentElement.lang==='en'?'Try this garment on the figure':'Prova questo capo sulla figura');
   b.innerHTML='<img src="'+c.f+'" alt="" loading="lazy">';
   b.onclick=function(){
     Array.prototype.forEach.call(picker.children,function(x){x.setAttribute('aria-pressed','false');});

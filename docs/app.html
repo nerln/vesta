@@ -132,6 +132,7 @@ main{flex:1;overflow:auto;-webkit-overflow-scrolling:touch}
 
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--line);
   border-radius:99px;padding:11px 18px;font-size:14px;min-height:44px;
+  color:var(--ink);text-decoration:none;cursor:pointer;
   transition:transform .18s var(--spring),background .2s var(--out),border-color .2s var(--out),opacity .2s}
 .btn:hover{border-color:var(--ink-3);background:var(--surface)}
 .btn:active{transform:scale(.96)}
@@ -214,19 +215,102 @@ const html = htm.bind(h);
   x.putImageData(d,0,0);
   document.documentElement.style.setProperty('--grain',`url(${c.toDataURL()})`); })();
 
+/* ------------------------------------------------------------------- lingua
+   Italiano e inglese. La prima volta la sceglie il browser, poi la sceglie
+   l'utente e resta. */
+const DIZ={
+ it:{
+  camerino:'Camerino', guardaroba:'Guardaroba', lookbook:'Lookbook',
+  impostazioni:'Impostazioni', chiudi:'Chiudi',
+  t_camerino:'Camerino', t_montaggio:'Montaggio', t_look:'Look composto',
+  fig_invito:'Aggiungi una tua foto: i capi si appoggeranno addosso.',
+  fig_aggiungi:'Aggiungi la figura', fig_cambia:'Cambia', fig_originale:'Originale',
+  slot_upper:'Sopra', slot_lower:'Sotto', slot_overall:'Intero', slot_shoes:'Scarpe',
+  cat_upper:'Sopra', cat_lower:'Sotto', cat_overall:'Interi',
+  cat_outerwear:'Capispalla', cat_shoes:'Scarpe', cat_accessory:'Accessori',
+  comp:'Salva il look', svuota:'Svuota', esporta:'Esporta', elimina:'Elimina',
+  sotto:'Tutto sul tuo dispositivo · nessun account, nessuna chiave, niente che esce',
+  trascina:'Trascina un capo sulla figura', piu_capi:'+ Capi', tutti:'Tutti',
+  g_titolo:'Guardaroba', g_capi:(n)=>`${n} ${n===1?'capo':'capi'}`, g_tuoi:(n)=>`${n} ${n===1?'tuo':'tuoi'}`,
+  g_vuoto:'Nessun capo in questa categoria.', g_aggiungi:'Aggiungi un capo da una foto',
+  l_titolo:'Lookbook', l_salvati:(n)=>`${n} ${n===1?'look salvato':'look salvati'}`,
+  l_vuoto:'Nessun look salvato. Componi un outfit e salvalo.', l_look:'Look',
+  i_titolo:'Aggiungi un capo',
+  i_spiega:'Fotografa il capo disteso su un fondo di un colore solo: un muro, un lenzuolo, un tavolo. Vesta misura il colore del bordo e lo toglie, qui sul dispositivo, senza mandare niente da nessuna parte.',
+  i_scatta:'Scatta una foto', i_file:'Dal rullino o da un file',
+  i_nota:'Una PNG già ritagliata viene usata così com\'è. Per il ritaglio generativo, quello che ricostruisce il capo come foto di catalogo, serve la versione con il backend sul tuo Mac.',
+  i_lavoro:'Ritaglio il capo', i_fondo_mosso:'Il fondo non è di un colore solo: il ritaglio non è pulito. Riprova su un fondo uniforme.',
+  i_stesso_colore:'Il capo ha quasi lo stesso colore del fondo, quindi il ritaglio lo buca. Rifai la foto su un fondo che stacchi.',
+  f_titolo:'La tua figura',
+  f_spiega:'Una foto in piedi, a figura intera, ben illuminata. Resta sul tuo dispositivo: non viene caricata da nessuna parte.',
+  f_scegli:'Scegli una foto', f_scatta:'Scatta ora', f_esempio:'Usa una figura di esempio',
+  f_lavoro:'Preparo la figura',
+  c_addosso:'Mettilo addosso', c_colore:'Colore', c_rivedere:'Da rivedere',
+  s_lingua:'Lingua', s_aspetto:'Aspetto', s_scuro:'Camerino', s_chiaro:'Giorno',
+  s_priv:'Vesta gira tutta nel browser. Niente account, niente chiavi, nessuna immagine che esce dal dispositivo. Il guardaroba è salvato qui e sparisce se cancelli i dati del sito.',
+  s_locale:'Per la prova generata addosso, quella vera, serve la versione con il backend che gira sul tuo Mac.',
+  s_codice:'Codice e istruzioni',
+  comp_lavoro:'Compongo il look', errore_comp:'Non sono riuscito a comporre il look.',
+ },
+ en:{
+  camerino:'Fitting room', guardaroba:'Wardrobe', lookbook:'Lookbook',
+  impostazioni:'Settings', chiudi:'Close',
+  t_camerino:'Fitting room', t_montaggio:'Layout', t_look:'Composed look',
+  fig_invito:'Add a photo of yourself and the clothes will sit on it.',
+  fig_aggiungi:'Add your figure', fig_cambia:'Change', fig_originale:'Original',
+  slot_upper:'Top', slot_lower:'Bottom', slot_overall:'Full', slot_shoes:'Shoes',
+  cat_upper:'Tops', cat_lower:'Bottoms', cat_overall:'Full length',
+  cat_outerwear:'Outerwear', cat_shoes:'Shoes', cat_accessory:'Accessories',
+  comp:'Save the look', svuota:'Clear', esporta:'Export', elimina:'Delete',
+  sotto:'All on your device · no account, no keys, nothing leaves',
+  trascina:'Drag a garment onto the figure', piu_capi:'+ Clothes', tutti:'All',
+  g_titolo:'Wardrobe', g_capi:(n)=>`${n} ${n===1?'garment':'garments'}`, g_tuoi:(n)=>`${n} your own`,
+  g_vuoto:'Nothing in this category.', g_aggiungi:'Add a garment from a photo',
+  l_titolo:'Lookbook', l_salvati:(n)=>`${n} saved ${n===1?'look':'looks'}`,
+  l_vuoto:'No looks saved yet. Put an outfit together and save it.', l_look:'Look',
+  i_titolo:'Add a garment',
+  i_spiega:'Photograph the garment laid flat on a single-colour background: a wall, a sheet, a table. Vesta measures the colour at the edges and removes it, here on your device, without sending anything anywhere.',
+  i_scatta:'Take a photo', i_file:'From your photos or a file',
+  i_nota:'A PNG that is already cut out is used as it is. For the generative cutout, the one that rebuilds the garment as a catalog photo, you need the version with the backend on your Mac.',
+  i_lavoro:'Cutting out the garment', i_fondo_mosso:'The background is not a single colour, so the cutout is rough. Try again against an even background.',
+  i_stesso_colore:'The garment is almost the same colour as the background, so the cutout eats into it. Shoot it again against a background that contrasts.',
+  f_titolo:'Your figure',
+  f_spiega:'A full-length photo, standing, well lit. It stays on your device and is never uploaded.',
+  f_scegli:'Choose a photo', f_scatta:'Take one now', f_esempio:'Use an example figure',
+  f_lavoro:'Preparing the figure',
+  c_addosso:'Put it on', c_colore:'Colour', c_rivedere:'Needs a look',
+  s_lingua:'Language', s_aspetto:'Appearance', s_scuro:'Fitting room', s_chiaro:'Daylight',
+  s_priv:'Vesta runs entirely in your browser. No account, no keys, no image leaves the device. The wardrobe is stored here and disappears if you clear the site data.',
+  s_locale:'For the real generated try-on you need the version with the backend running on your Mac.',
+  s_codice:'Code and instructions',
+  comp_lavoro:'Composing the look', errore_comp:'I could not compose the look.',
+ },
+};
+const LINGUE=[['it','Italiano'],['en','English']];
+const linguaIniziale=()=>{
+  const salvata=localStorage.getItem('vw.lang');
+  if(salvata&&DIZ[salvata]) return salvata;
+  return (navigator.language||'en').toLowerCase().startsWith('it')?'it':'en';
+};
+
 const buzz = (ms=8)=>{ try{ navigator.vibrate && navigator.vibrate(ms); }catch(e){} };
-const SLOTS=[['upper','Sopra'],['lower','Sotto'],['overall','Intero'],['shoes','Scarpe']];
+const SLOTS=['upper','lower','overall','shoes'];
 const FALLBACK_ANCHORS={upper:[.20,.20,.80,.58],lower:[.22,.48,.78,.96],overall:[.18,.19,.82,.92],
   outerwear:[.16,.19,.84,.64],shoes:[.32,.88,.68,1],accessory:[.40,.09,.60,.28]};
 const Z={overall:2,upper:3,outerwear:4,lower:1,shoes:1,accessory:5};
 const urlOf=(g)=> g.url || (g.blob ? (g._u ||= URL.createObjectURL(g.blob)) : g.file);
+const CAT_KEYS=['upper','lower','overall','outerwear','shoes','accessory'];
+
+V.dimenticaChiavi();
 
 function App(){
+  const [lang,setLang]=useState(linguaIniziale);
+  const t=useCallback((k,...a)=>{ const v=DIZ[lang][k]; return typeof v==='function'?v(...a):(v??k); },[lang]);
+
   const [view,setView]=useState('camerino');
   const [garments,setGarments]=useState([]);
   const [demo,setDemo]=useState([]);
   const [person,setPerson]=useState(null);
-  const [analysis,setAnalysis]=useState(null);
   const [anchors,setAnchors]=useState(null);
   const [figAR,setFigAR]=useState('3/4');
   const [slots,setSlots]=useState({});
@@ -235,16 +319,17 @@ function App(){
   const [jobs,setJobs]=useState([]);
   const [sheet,setSheet]=useState(null);
   const [filter,setFilter]=useState('all');
-  const [ready,setReady]=useState(V.settings.ready);
   const [theme,setTheme]=useState(localStorage.getItem('vw.theme')||'dark');
   const [popped,setPopped]=useState(null);
   const stageRef=useRef(null);
 
   useEffect(()=>{ document.documentElement.dataset.theme=theme; localStorage.setItem('vw.theme',theme); },[theme]);
+  useEffect(()=>{ document.documentElement.lang=lang; localStorage.setItem('vw.lang',lang);
+    document.title=lang==='it'?'Vesta':'Vesta'; },[lang]);
   useEffect(()=>{ (async()=>{
     const [g,l,meta]=await Promise.all([V.store.all('garments'),V.store.all('looks'),V.store.get('meta','person')]);
     setGarments(g||[]); setLooks(l||[]);
-    if(meta){ setPerson(meta); setAnalysis(meta.analysis||null); setAnchors(meta.anchors||null); }
+    if(meta){ setPerson(meta); setAnchors(meta.anchors||null); }
     try{ const d=await (await fetch('media/demo.json')).json(); setDemo(d.map(x=>({...x,demo:true}))); }catch(e){}
   })(); },[]);
 
@@ -252,9 +337,10 @@ function App(){
   const shown=filter==='all'?all:all.filter(g=>g.category===filter);
   const counts=all.reduce((a,g)=>{a[g.category]=(a[g.category]||0)+1;return a;},{});
   const filled=Object.entries(slots).filter(([k,v])=>v);
+  const nomeCapo=(g)=> g.demo&&g[`label_${lang}`] ? g[`label_${lang}`] : g.label;
 
   const job=(label)=>{ const id='j'+Date.now()+Math.random();
-    setJobs(j=>[...j,{id,label,t0:Date.now(),sec:0,est:25}]); return id; };
+    setJobs(j=>[...j,{id,label,t0:Date.now(),sec:0,est:6}]); return id; };
   const jobDone=(id,err)=>{ if(err){ setJobs(j=>j.map(x=>x.id===id?{...x,err,done:true}:x));
       setTimeout(()=>setJobs(j=>j.filter(x=>x.id!==id)),9000); }
     else setJobs(j=>j.filter(x=>x.id!==id)); };
@@ -271,80 +357,68 @@ function App(){
       return n; });
     setLook(null); setPopped(cat); setTimeout(()=>setPopped(null),450); buzz();
   }
+
+  /** Ritaglio locale: nessun modello, nessuna rete. */
   async function addPhotos(files){
     const list=[...files].slice(0,8);
     if(!list.length) return;
     setSheet(null);
-    if(!V.settings.ready){ setSheet({k:'chiave',why:'Per estrarre i capi dalle foto serve una chiave.'}); return; }
     for(const f of list){
-      const id=job('Cerco i capi nella foto');
+      const id=job(t('i_lavoro'));
       try{
         const small=await V.downscale(f,1400);
-        const inv=await V.visionJSON(V.INVENTORY_PROMPT,[small],V.INVENTORY_SCHEMA);
-        const items=(inv.items||[]).filter(i=>Array.isArray(i.bbox)&&i.bbox.length===4);
-        jobDone(id);
-        for(const it of items) extractOne(small,it);
+        const bmp=await createImageBitmap(small);
+        const cv=V.canvasOf(bmp.width,bmp.height);
+        cv.getContext('2d').drawImage(bmp,0,0);
+        let cut, avviso=null;
+        if(V.hasAlpha(cv)){ cut=V.trimAlpha(cv); }        // gia' ritagliata: si prende com'e'
+        else {
+          const r=V.stripFlat(cv);
+          cut=V.trimAlpha(r.canvas);
+          const q=V.checkCutout(cut);
+          if(r.contrasto<45) avviso=t('i_stesso_colore');
+          else if(r.uniforme>60||!q.ok) avviso=t('i_fondo_mosso');
+        }
+        const blob=await V.toBlob(cut);
+        const rec={id:'g'+Date.now()+Math.random().toString(16).slice(2,6),
+          label:(f.name||'Capo').replace(/\.[a-z0-9]+$/i,'').slice(0,40)||'Capo',
+          category:'upper', blob, color:V.dominantHex(cut), created:Date.now()};
+        await V.store.put('garments',rec);
+        setGarments(g=>[...g,rec]);
+        jobDone(id,avviso); buzz(14);
       }catch(e){ jobDone(id,e.message); }
     }
   }
-  async function extractOne(photo,it){
-    const id=job('Ricostruisco: '+(it.label||'capo'));
-    try{
-      const crop=await V.cropSquare(photo,it.bbox);
-      let best=null;
-      for(const key of [V.pickKey(it.color_hex),'#ff00ff','#0000ff']){
-        const raw=await V.generateImage(V.reconstructPrompt(it,key),[crop],{size:'1024x1024'});
-        const bmp=await createImageBitmap(raw);
-        const cv=V.canvasOf(bmp.width,bmp.height); cv.getContext('2d').drawImage(bmp,0,0);
-        const cut=V.trimAlpha(V.stripChroma(cv,key));
-        const q=V.checkCutout(cut);
-        best={cut,q};
-        if(q.ok) break;
-      }
-      const blob=await V.toBlob(best.cut);
-      const rec={id:'g'+Date.now()+Math.random().toString(16).slice(2,6),
-        label:it.label||'Capo', category:it.category||'upper', blob,
-        color:it.color_hex||V.dominantHex(best.cut), color_name:it.color_name||'',
-        material:it.material||'', silhouette:it.silhouette||'', construction:it.construction||'',
-        description:it.description||'', qa:best.q, created:Date.now()};
-      await V.store.put('garments',rec);
-      setGarments(g=>[...g,rec]); jobDone(id); buzz(14);
-    }catch(e){ jobDone(id,e.message); }
-  }
+
   async function setPersonPhoto(file){
-    const id=job('Preparo la figura');
+    const id=job(t('f_lavoro'));
     try{
       const blob=await V.downscale(file,1200);
       const rec={id:'person',blob,created:Date.now()};
       await V.store.put('meta',rec); setPerson(rec); setLook(null);
-      if(V.settings.ready){
-        const info=await V.visionJSON(V.PERSON_PROMPT,[blob],V.PERSON_SCHEMA);
-        const a={upper:info.upper,lower:info.lower,shoes:(info.shoes||[]).some(Boolean)?info.shoes:null};
-        const rec2={...rec,anchors:a,analysis:info};
-        await V.store.put('meta',rec2); setPerson(rec2); setAnchors(a); setAnalysis(info);
-        if(info.palette?.[0]) document.documentElement.style.setProperty('--glow',info.palette[0]+'2b');
-      }
       jobDone(id);
     }catch(e){ jobDone(id,e.message); }
   }
-  async function develop(){
+
+  /** Il montaggio diventa un PNG vero, composto su tela qui sul dispositivo. */
+  async function componi(){
     if(!person){ setSheet({k:'figura'}); return; }
-    if(!V.settings.ready){ setSheet({k:'chiave',why:'Per generare la prova serve una chiave.'}); return; }
-    const items=['overall','outerwear','upper','lower','shoes'].map(k=>slots[k]).filter(Boolean);
+    const items=['lower','shoes','overall','upper','outerwear']
+      .map(k=>slots[k]).filter(Boolean)
+      .sort((a,b)=>(Z[a.category]||2)-(Z[b.category]||2));
     if(!items.length) return;
-    const id=job('Sviluppo il look');
+    const id=job(t('comp_lavoro'));
     try{
-      const imgs=[person.blob];
-      for(const it of items) imgs.push(it.blob||await (await fetch(urlOf(it))).blob());
-      const out=await V.generateImage(V.tryonPrompt(items),imgs,{size:'1024x1536'});
-      setLook(URL.createObjectURL(out)); jobDone(id); buzz(20);
-    }catch(e){ jobDone(id,e.message); }
-  }
-  async function saveLook(){
-    if(!look) return;
-    const blob=await (await fetch(look)).blob();
-    const rec={id:'l'+Date.now(),blob,created:Date.now(),items:filled.map(([k,v])=>v.label)};
-    await V.store.put('looks',rec); setLooks(l=>[...l,rec]); buzz(14);
+      const strati=[];
+      for(const it of items) strati.push({blob:it.blob,url:it.url||it.file,box:anchorOf(it.category)});
+      const c=await V.composeLook(person.blob,strati);
+      const blob=await V.toBlob(c);
+      const rec={id:'l'+Date.now(),blob,created:Date.now(),items:items.map(i=>nomeCapo(i))};
+      await V.store.put('looks',rec);
+      setLooks(l=>[...l,rec]);
+      setLook(URL.createObjectURL(blob));
+      jobDone(id); buzz(20);
+    }catch(e){ jobDone(id,t('errore_comp')); }
   }
 
   /* ---------------- trascinamento ---------------- */
@@ -355,8 +429,7 @@ function App(){
     const ghost=document.createElement('img');
     ghost.src=img.src; ghost.className='ghost';
     ghost.style.left='0px'; ghost.style.top='0px';
-    const move=(x,y)=>{ ghost.style.transform=`translate(${x-60}px,${y-60}px) scale(1.05)`; };
-    move(e.clientX,e.clientY);
+    ghost.style.transform=`translate(${e.clientX-60}px,${e.clientY-60}px) scale(1.05)`;
     document.body.appendChild(ghost);
     card.classList.add('dragging');
     drag.current={g,ghost,card,moved:false};
@@ -389,19 +462,18 @@ function App(){
   /* ---------------- viste ---------------- */
   const figStyle=`aspect-ratio:${figAR}`;
   const onFig=e=>{ const i=e.target; if(i.naturalWidth) setFigAR(i.naturalWidth+'/'+i.naturalHeight); };
-  const anchorOf=(cat)=>{ const a=anchors||{};
+  function anchorOf(cat){ const a=anchors||{};
     const m=cat==='outerwear'?a.upper:a[cat];
-    return (m&&m.length===4)?m:(FALLBACK_ANCHORS[cat]||FALLBACK_ANCHORS.upper); };
+    return (m&&m.length===4)?m:(FALLBACK_ANCHORS[cat]||FALLBACK_ANCHORS.upper); }
 
   const stage=html`
     <div class="stage" ref=${stageRef}>
       <div class="spot"></div>
       ${look?html`<div class="fig" style=${figStyle}>
-            <img class="base developing" key=${look} src=${look} alt="Il tuo look" /></div>`
+            <img class="base developing" key=${look} src=${look} alt=${t('t_look')} /></div>`
         : person?html`<div class="fig" style=${figStyle}>
-            <img class="base" src=${urlOf(person)} alt="La tua figura" onLoad=${onFig} />
+            <img class="base" src=${urlOf(person)} alt=${t('f_titolo')} onLoad=${onFig} />
             ${filled.map(([k,g])=>{ const a=anchorOf(g.category);
-              // il capo riempie l'appiglio senza deformarsi e resta appeso dall'alto (le scarpe da sotto)
               return html`<img class="layer ${g.category}" key=${g.id} src=${urlOf(g)} alt=""
                 style=${`left:${a[0]*100}%;top:${a[1]*100}%;width:${(a[2]-a[0])*100}%;height:${(a[3]-a[1])*100}%;z-index:${Z[g.category]||2}`} />`; })}
           </div>`
@@ -409,15 +481,21 @@ function App(){
             <svg viewBox="0 0 100 200" width="110" height="220" aria-hidden="true">
               <circle cx="50" cy="26" r="18" fill="currentColor"/>
               <path d="M28 50h44l8 60H20zM30 110h16l-4 78H26zM54 110h16l4 78H58z" fill="currentColor"/></svg>
-            <p class="hint" style="margin:14px auto 12px">Aggiungi una tua foto: i capi si appoggeranno addosso.</p>
-            <button class="btn primary" onClick=${()=>setSheet({k:'figura'})}>Aggiungi la figura</button>
+            <p class="hint" style="margin:14px auto 12px">${t('fig_invito')}</p>
+            <button class="btn primary" onClick=${()=>setSheet({k:'figura'})}>${t('fig_aggiungi')}</button>
           </div>`}
-      <span class="tag">${look?'Prova generata':filled.length?'Montaggio':'Camerino'}</span>
+      <span class="tag">${look?t('t_look'):filled.length?t('t_montaggio'):t('t_camerino')}</span>
       <div class="corner">
-        ${look?html`<button class="btn small" onClick=${()=>setLook(null)}>Originale</button>`:null}
-        ${person?html`<button class="btn small" onClick=${()=>setSheet({k:'figura'})}>Cambia</button>`:null}
+        ${look?html`<button class="btn small" onClick=${()=>setLook(null)}>${t('fig_originale')}</button>`:null}
+        ${person?html`<button class="btn small" onClick=${()=>setSheet({k:'figura'})}>${t('fig_cambia')}</button>`:null}
       </div>
     </div>`;
+
+  const chips=html`<div class="chips">
+    <button class="chip" aria-pressed=${filter==='all'} onClick=${()=>setFilter('all')}>${t('tutti')}<span class="n">${all.length}</span></button>
+    ${CAT_KEYS.filter(k=>counts[k]).map(k=>html`
+      <button class="chip" aria-pressed=${filter===k} onClick=${()=>setFilter(k)}>${t('cat_'+k)}<span class="n">${counts[k]}</span></button>`)}
+  </div>`;
 
   const camerino=html`
     <div class="view">
@@ -425,41 +503,36 @@ function App(){
         <div class="left">
           ${stage}
           <div class="slots">
-            ${SLOTS.map(([k,l])=>{ const g=slots[k];
+            ${SLOTS.map(k=>{ const g=slots[k];
               return html`<button class=${'slot'+(g?' full':'')+(popped===k?' pop':'')}
-                onClick=${()=>g?null:setView('guardaroba')} title=${l}>
+                onClick=${()=>g?null:setView('guardaroba')} title=${t('slot_'+k)}>
                 ${g?html`<img src=${urlOf(g)} alt="" />`:html`<span style="font-size:17px">+</span>`}
-                <span class="k">${l}</span>
+                <span class="k">${t('slot_'+k)}</span>
                 ${g?html`<span class="x" onClick=${(e)=>{e.stopPropagation();setSlots(s=>({...s,[k]:null}));setLook(null);buzz();}}>×</span>`:null}
               </button>`; })}
           </div>
           <div class="row" style="margin-top:12px;gap:8px;flex-wrap:wrap">
-            <button class="btn primary" style="flex:1;min-width:180px" disabled=${!filled.length} onClick=${develop}>
-              Sviluppa il look</button>
-            ${filled.length?html`<button class="btn small" onClick=${()=>{setSlots({});setLook(null);buzz();}}>Svuota</button>`:null}
-            ${look?html`<button class="btn small" onClick=${saveLook}>Salva</button>`:null}
-            ${look?html`<a class="btn small" href=${look} download="vesta-look.png">Esporta</a>`:null}
+            <button class="btn primary" style="flex:1;min-width:180px" disabled=${!filled.length} onClick=${componi}>
+              ${t('comp')}</button>
+            ${filled.length?html`<button class="btn small" onClick=${()=>{setSlots({});setLook(null);buzz();}}>${t('svuota')}</button>`:null}
+            ${look?html`<a class="btn small" href=${look} download="vesta-look.png">${t('esporta')}</a>`:null}
           </div>
-          <div class="sub">${ready?'Con la tua chiave · circa 20 s':'Montaggio istantaneo · per la prova vera serve una chiave'}</div>
+          <div class="sub">${t('sotto')}</div>
         </div>
 
         <div>
           <div class="row" style="justify-content:space-between;margin-bottom:8px">
-            <span class="meta">Trascina un capo sulla figura</span>
-            <button class="btn small" onClick=${()=>setSheet({k:'importa'})}>+ Capi</button>
+            <span class="meta">${t('trascina')}</span>
+            <button class="btn small" onClick=${()=>setSheet({k:'importa'})}>${t('piu_capi')}</button>
           </div>
-          <div class="chips">
-            <button class="chip" aria-pressed=${filter==='all'} onClick=${()=>setFilter('all')}>Tutti<span class="n">${all.length}</span></button>
-            ${Object.entries(V.CATS).filter(([k])=>counts[k]).map(([k,l])=>html`
-              <button class="chip" aria-pressed=${filter===k} onClick=${()=>setFilter(k)}>${l}<span class="n">${counts[k]}</span></button>`)}
-          </div>
+          ${chips}
           <div class="rail">
             ${shown.map(g=>html`
               <button class="card" key=${g.id} onPointerDown=${onCardDown(g)} onPointerMove=${onCardMove}
                 onPointerUp=${onCardUp} onPointerCancel=${onCardUp}
                 onContextMenu=${(e)=>{e.preventDefault();setSheet({k:'capo',g});}}>
-                <div class="art"><img src=${urlOf(g)} alt=${g.label} draggable="false" /></div>
-                <div class="n">${g.label}</div>
+                <div class="art"><img src=${urlOf(g)} alt=${nomeCapo(g)} draggable="false" /></div>
+                <div class="n">${nomeCapo(g)}</div>
               </button>`)}
           </div>
         </div>
@@ -468,38 +541,34 @@ function App(){
 
   const guardaroba=html`
     <div class="view">
-      <h1 class="title">Guardaroba</h1>
-      <div class="meta">${all.length} capi${garments.length?` · ${garments.length} tuoi`:''}</div>
-      <div class="chips" style="margin-top:14px">
-        <button class="chip" aria-pressed=${filter==='all'} onClick=${()=>setFilter('all')}>Tutti<span class="n">${all.length}</span></button>
-        ${Object.entries(V.CATS).filter(([k])=>counts[k]).map(([k,l])=>html`
-          <button class="chip" aria-pressed=${filter===k} onClick=${()=>setFilter(k)}>${l}<span class="n">${counts[k]}</span></button>`)}
-      </div>
+      <h1 class="title">${t('g_titolo')}</h1>
+      <div class="meta">${t('g_capi',all.length)}${garments.length?` · ${t('g_tuoi',garments.length)}`:''}</div>
+      <div style="margin-top:14px">${chips}</div>
       ${shown.length?html`<div class="grid">
         ${shown.map(g=>html`<button class="card" key=${g.id} style="width:auto"
             onClick=${()=>{place(g);setView('camerino');}} onContextMenu=${(e)=>{e.preventDefault();setSheet({k:'capo',g});}}>
-          <div class="art"><img src=${urlOf(g)} alt=${g.label} draggable="false" /></div>
-          <div class="n">${g.label}</div>
-          <div class="meta" style="margin-top:2px">${g.color_name||V.CATS[g.category]||''}</div>
+          <div class="art"><img src=${urlOf(g)} alt=${nomeCapo(g)} draggable="false" /></div>
+          <div class="n">${nomeCapo(g)}</div>
+          <div class="meta" style="margin-top:2px">${t('cat_'+g.category)}</div>
         </button>`)}
-      </div>`:html`<div class="empty"><p>Nessun capo in questa categoria.</p>
-        <button class="btn primary" onClick=${()=>setSheet({k:'importa'})}>Aggiungi capi da una foto</button></div>`}
+      </div>`:html`<div class="empty"><p>${t('g_vuoto')}</p>
+        <button class="btn primary" onClick=${()=>setSheet({k:'importa'})}>${t('g_aggiungi')}</button></div>`}
     </div>`;
 
   const lookbook=html`
     <div class="view">
-      <h1 class="title">Lookbook</h1>
-      <div class="meta">${looks.length} look salvati</div>
+      <h1 class="title">${t('l_titolo')}</h1>
+      <div class="meta">${t('l_salvati',looks.length)}</div>
       ${looks.length?html`<div class="grid" style="margin-top:16px">
         ${looks.slice().reverse().map((l,i)=>html`<div class="card" style="width:auto" key=${l.id}>
           <div class="art"><img src=${URL.createObjectURL(l.blob)} alt="" /></div>
-          <div class="n">Look ${looks.length-i}</div>
+          <div class="n">${t('l_look')} ${looks.length-i}</div>
           <div class="row" style="gap:6px;margin-top:6px">
-            <a class="btn small" href=${URL.createObjectURL(l.blob)} download=${l.id+'.png'}>Esporta</a>
-            <button class="btn small" onClick=${async()=>{await V.store.del('looks',l.id);setLooks(await V.store.all('looks'));}}>Elimina</button>
+            <a class="btn small" href=${URL.createObjectURL(l.blob)} download=${l.id+'.png'}>${t('esporta')}</a>
+            <button class="btn small" onClick=${async()=>{await V.store.del('looks',l.id);setLooks(await V.store.all('looks'));}}>${t('elimina')}</button>
           </div>
         </div>`)}
-      </div>`:html`<div class="empty">Nessun look salvato. Componi un outfit e sviluppalo.</div>`}
+      </div>`:html`<div class="empty">${t('l_vuoto')}</div>`}
     </div>`;
 
   return html`
@@ -507,12 +576,11 @@ function App(){
       <div class="top">
         <span class="wm">Vesta</span>
         <div class="switch">
-          ${[['camerino','Camerino'],['guardaroba','Guardaroba'],['lookbook','Lookbook']].map(([k,l])=>html`
-            <button aria-pressed=${view===k} onClick=${()=>{setView(k);buzz(5);}}>${l}</button>`)}
+          ${['camerino','guardaroba','lookbook'].map(k=>html`
+            <button aria-pressed=${view===k} onClick=${()=>{setView(k);buzz(5);}}>${t(k)}</button>`)}
         </div>
-        <button class="row" style="gap:7px" onClick=${()=>setSheet({k:'chiave'})} aria-label="Impostazioni">
-          <span class=${'dot'+(ready?' on':' warn')}></span>
-          <span class="meta" style="display:none">chiave</span>
+        <button class="row" style="gap:7px" onClick=${()=>setSheet({k:'impostazioni'})} aria-label=${t('impostazioni')}>
+          <span class="dot on"></span>
         </button>
       </div>
       <main>${view==='camerino'?camerino:view==='guardaroba'?guardaroba:lookbook}</main>
@@ -527,103 +595,76 @@ function App(){
         </div>`)}
       </div>`:null}
 
-      ${sheet?html`<${Sheet} sheet=${sheet} close=${()=>setSheet(null)} ctx=${{
-        addPhotos,setPersonPhoto,setReady,theme,setTheme,analysis,person,
+      ${sheet?html`<${Sheet} sheet=${sheet} close=${()=>setSheet(null)} t=${t} ctx=${{
+        addPhotos,setPersonPhoto,theme,setTheme,lang,setLang,nomeCapo,
         removeGarment:async(g)=>{ await V.store.del('garments',g.id); setGarments(x=>x.filter(y=>y.id!==g.id)); },
         place,setView}} />`:null}
     </div>`;
 }
 
-function Sheet({sheet,close,ctx}){
+function Sheet({sheet,close,ctx,t}){
   const k=sheet.k;
-  const [prov,setProv]=useState(V.settings.provider);
-  const [key,setKey]=useState('');
   const stop=(e)=>e.stopPropagation();
-  const head=(t)=>html`<div class="sheet-h"><h2>${t}</h2>
-    <button class="btn small" onClick=${close}>Chiudi</button></div>`;
+  const head=(x)=>html`<div class="sheet-h"><h2>${x}</h2>
+    <button class="btn small" onClick=${close}>${t('chiudi')}</button></div>`;
 
   if(k==='importa') return html`<div class="veil" onClick=${close}><div class="sheet" onClick=${stop}>
-    ${head('Aggiungi capi')}
-    <p class="hint" style="margin-bottom:14px">Fotografa i vestiti, anche indossati. Ogni capo viene
-      ricostruito come immagine di catalogo e ritagliato su fondo trasparente.</p>
-    <label class="btn wide" style="margin-bottom:8px">Scatta una foto
+    ${head(t('i_titolo'))}
+    <p class="hint" style="margin-bottom:14px">${t('i_spiega')}</p>
+    <label class="btn wide" style="margin-bottom:8px">${t('i_scatta')}
       <input class="hidden-file" type="file" accept="image/*" capture="environment"
         onChange=${e=>ctx.addPhotos(e.target.files)} /></label>
-    <label class="btn wide">Dal rullino o da file
+    <label class="btn wide">${t('i_file')}
       <input class="hidden-file" type="file" accept="image/*" multiple
         onChange=${e=>ctx.addPhotos(e.target.files)} /></label>
-    <p class="hint" style="margin-top:12px">Fino a 8 foto per volta. Serve una chiave: ogni capo costa
-      circa 4 centesimi con Gemini.</p>
+    <p class="hint" style="margin-top:12px">${t('i_nota')}</p>
   </div></div>`;
 
   if(k==='figura') return html`<div class="veil" onClick=${close}><div class="sheet" onClick=${stop}>
-    ${head('La tua figura')}
-    <p class="hint" style="margin-bottom:14px">Una foto in piedi, a figura intera, ben illuminata.
-      Resta sul tuo dispositivo: non viene caricata da nessuna parte finche' non generi una prova.</p>
-    <label class="btn wide" style="margin-bottom:8px">Scegli una foto
+    ${head(t('f_titolo'))}
+    <p class="hint" style="margin-bottom:14px">${t('f_spiega')}</p>
+    <label class="btn wide" style="margin-bottom:8px">${t('f_scegli')}
       <input class="hidden-file" type="file" accept="image/*"
         onChange=${e=>{const f=e.target.files[0]; if(f){close();ctx.setPersonPhoto(f);}}} /></label>
-    <label class="btn wide" style="margin-bottom:8px">Scatta ora
+    <label class="btn wide" style="margin-bottom:8px">${t('f_scatta')}
       <input class="hidden-file" type="file" accept="image/*" capture="user"
         onChange=${e=>{const f=e.target.files[0]; if(f){close();ctx.setPersonPhoto(f);}}} /></label>
     <button class="btn wide" onClick=${async()=>{ close();
-      ctx.setPersonPhoto(await (await fetch('media/figura.png')).blob()); }}>Usa una figura di esempio</button>
+      ctx.setPersonPhoto(await (await fetch('media/figura.png')).blob()); }}>${t('f_esempio')}</button>
   </div></div>`;
 
   if(k==='capo'){ const g=sheet.g;
     return html`<div class="veil" onClick=${close}><div class="sheet" onClick=${stop}>
-      ${head(g.label)}
+      ${head(ctx.nomeCapo(g))}
       <div class="art" style="aspect-ratio:4/5;background:var(--sunk);border:1px solid var(--line-soft);
         border-radius:4px;display:flex;align-items:center;justify-content:center;overflow:hidden">
         <img src=${urlOf(g)} style="width:100%;height:100%;object-fit:contain;padding:10%;filter:var(--sh-art)" /></div>
       <dl class="dl">
-        ${g.color_name?html`<dt>Colore</dt><dd>${g.color_name}</dd>`:null}
-        ${g.material?html`<dt>Osservato</dt><dd>${[g.material,g.silhouette,g.construction].filter(Boolean).join(' · ')}</dd>`:null}
-        ${g.description?html`<dt>Nota</dt><dd>${g.description}</dd>`:null}
-        ${g.qa&&!g.qa.ok?html`<dt>Da rivedere</dt><dd>${g.qa.problems.join(', ')}</dd>`:null}
+        ${g.color_name?html`<dt>${t('c_colore')}</dt><dd>${g.color_name}</dd>`:null}
+        ${g.qa&&!g.qa.ok?html`<dt>${t('c_rivedere')}</dt><dd>${g.qa.problems.join(', ')}</dd>`:null}
       </dl>
       <div class="row" style="margin-top:16px;gap:8px">
-        <button class="btn primary" onClick=${()=>{ctx.place(g);ctx.setView('camerino');close();}}>Mettilo addosso</button>
-        ${!g.demo?html`<button class="btn" onClick=${async()=>{await ctx.removeGarment(g);close();}}>Elimina</button>`:null}
+        <button class="btn primary" onClick=${()=>{ctx.place(g);ctx.setView('camerino');close();}}>${t('c_addosso')}</button>
+        ${!g.demo?html`<button class="btn" onClick=${async()=>{await ctx.removeGarment(g);close();}}>${t('elimina')}</button>`:null}
       </div>
     </div></div>`;
   }
 
   return html`<div class="veil" onClick=${close}><div class="sheet" onClick=${stop}>
-    ${head('Chiave e aspetto')}
-    ${sheet.why?html`<div class="err-box">${sheet.why}</div>`:null}
-    <p class="hint" style="margin-bottom:12px">Vesta gira tutta nel browser. Per generare servono i
-      modelli: metti la tua chiave, resta solo su questo dispositivo e le richieste partono da qui.</p>
-    <div class="switch" style="margin-bottom:12px">
-      ${[['gemini','Google Gemini'],['openai','OpenAI']].map(([p,l])=>html`
-        <button aria-pressed=${prov===p} onClick=${()=>{setProv(p);V.settings.provider=p;setKey('');}}>${l}</button>`)}
+    ${head(t('impostazioni'))}
+    <div class="sheet-h" style="margin-top:2px"><h2 style="font-size:18px">${t('s_lingua')}</h2></div>
+    <div class="switch" style="margin-bottom:20px">
+      ${LINGUE.map(([code,nome])=>html`
+        <button aria-pressed=${ctx.lang===code} onClick=${()=>ctx.setLang(code)}>${nome}</button>`)}
     </div>
-    ${prov==='openai'?html`<div class="err-box" style="margin-bottom:12px">
-      OpenAI non risponde alle pagine web: il browser blocca la chiamata prima che parta, perché
-      api.openai.com non autorizza l'header con la chiave. In questa versione funziona Gemini.
-      Per usare OpenAI serve la versione con il backend sul tuo Mac.</div>`:null}
-    <div class="row">
-      <input class="field" type="password" autocomplete="off" value=${key}
-        placeholder=${V.settings.keyFor(prov)?'configurata':(prov==='openai'?'sk-…':'AIza…')}
-        onInput=${e=>setKey(e.target.value)} />
-      <button class="btn" onClick=${()=>{ V.settings.provider=prov; V.settings.key=key.trim();
-        ctx.setReady(V.settings.ready); setKey(''); }}>Salva</button>
+    <div class="sheet-h"><h2 style="font-size:18px">${t('s_aspetto')}</h2></div>
+    <div class="switch" style="margin-bottom:20px">
+      ${[['dark',t('s_scuro')],['light',t('s_chiaro')]].map(([x,l])=>html`
+        <button aria-pressed=${ctx.theme===x} onClick=${()=>ctx.setTheme(x)}>${l}</button>`)}
     </div>
-    <p class="hint" style="margin-top:8px">
-      ${prov==='gemini'?'Chiave da aistudio.google.com. Le immagini richiedono la fatturazione attiva, circa 0,04 $ ciascuna.'
-        :'Chiave da platform.openai.com. Circa 0,07-0,25 $ a immagine.'}</p>
-    <div class="sheet-h" style="margin-top:22px"><h2 style="font-size:18px">Aspetto</h2></div>
-    <div class="switch">
-      ${[['dark','Camerino'],['light','Giorno']].map(([t,l])=>html`
-        <button aria-pressed=${ctx.theme===t} onClick=${()=>ctx.setTheme(t)}>${l}</button>`)}
-    </div>
-    ${ctx.analysis?html`<div style="margin-top:20px">
-      <div class="meta">La tua stagione</div>
-      <div style="font-family:var(--f-display);font-size:20px;margin:4px 0 8px">${ctx.analysis.season}</div>
-      <div class="row" style="gap:6px">${(ctx.analysis.palette||[]).map(c=>html`
-        <span style=${`width:22px;height:22px;border-radius:50%;background:${c};box-shadow:inset 0 0 0 1px rgba(128,128,128,.4)`}></span>`)}</div>
-      <p class="hint" style="margin-top:8px">${ctx.analysis.advice||''}</p>
-    </div>`:null}
+    <p class="hint">${t('s_priv')}</p>
+    <p class="hint" style="margin-top:10px">${t('s_locale')}</p>
+    <p style="margin-top:14px"><a class="btn small" href="https://github.com/nerln/vesta">${t('s_codice')}</a></p>
   </div></div>`;
 }
 
