@@ -35,6 +35,9 @@ from fastapi.staticfiles import StaticFiles
 
 from model.pipeline import CatVTONPipeline
 from mask_from_person import garment_mask
+from tight_crop import riquadro_di_lavoro, ricomponi, guadagno
+import live_tryon
+from figure_store import ArchivioFigure
 from color_analysis import analyze as analyze_colors
 from cloud_tryon import cloud_tryon
 from premium_tryon import premium_tryon, resolve_provider, save_key, configured as premium_configured
@@ -132,6 +135,8 @@ def tryon(
     mode: str = Form("local"),
     provider: str = Form(""),
     garment_id: str = Form(""),
+    stretto: bool = Form(True),
+    cfg: float = Form(2.5),
 ):
     q = QUALITY.get(quality, QUALITY["fast"])
     cat = category if category in ("upper", "lower", "overall") else "upper"
@@ -147,7 +152,7 @@ def tryon(
         mode_key = f"premium:{prov}"
 
     # cache su disco: stessa persona+capo+impostazioni -> ritorno immediato (anche pre-generato)
-    key = hashlib.sha1(person_bytes + cloth_bytes + f"{cat}|{quality}|{mode_key}".encode()).hexdigest()
+    key = hashlib.sha1(person_bytes + cloth_bytes + f"{cat}|{quality}|{mode_key}|{int(stretto)}|{cfg}".encode()).hexdigest()
     cache_path = os.path.join(CACHE_DIR, key + ".png")
     if os.path.exists(cache_path):
         return StreamingResponse(open(cache_path, "rb"), media_type="image/png",
@@ -156,6 +161,7 @@ def tryon(
     t0 = time.perf_counter()
     result = None
     used = mode_key
+    gain = 1.0
     if mode == "premium":
         person_img = Image.open(io.BytesIO(person_bytes)).convert("RGB")
         cloth_img = Image.open(io.BytesIO(cloth_bytes)).convert("RGB")
@@ -182,13 +188,27 @@ def tryon(
         person_img = Image.open(io.BytesIO(person_bytes)).convert("RGB")
         cloth_img = Image.open(io.BytesIO(cloth_bytes)).convert("RGB")
         mask = garment_mask(person_img, cat)
+
+        # Il capo occupa una frazione della foto, quindi su una tela 384x512 riceve
+        # pochi pixel: misurato 42.000 su 196.608 sulla foto campione. Generando sul
+        # riquadro della maschera la tela e' tutta sua, e la ricomposizione rimette
+        # solo l'area della maschera, cosi' viso e sfondo restano gli originali.
+        box = riquadro_di_lavoro(mask, person_img.size) if stretto else None
+        if box:
+            gain = guadagno(mask, person_img.size)
+            in_person = person_img.crop(box)
+            in_mask = mask.crop(box)
+        else:
+            in_person, in_mask = person_img, mask
+
         generator = torch.Generator(device="cpu").manual_seed(42)
         with _LOCK:
-            result = PIPE(
-                person_img, cloth_img, mask,
-                num_inference_steps=q["steps"], guidance_scale=2.5,
+            out = PIPE(
+                in_person, cloth_img, in_mask,
+                num_inference_steps=q["steps"], guidance_scale=cfg,
                 height=q["height"], width=q["width"], generator=generator,
             )[0]
+        result = ricomponi(person_img, out, mask, box) if box else out
         try:
             torch.mps.empty_cache()  # libera la cache MPS: evita la crescita a molti GB
         except Exception:
@@ -202,8 +222,145 @@ def tryon(
     return StreamingResponse(
         buf,
         media_type="image/png",
-        headers={"X-Inference-Seconds": f"{dt:.1f}", "X-Quality": quality, "X-Mode": used, "X-Cache": "miss"},
+        headers={"X-Inference-Seconds": f"{dt:.1f}", "X-Quality": quality, "X-Mode": used,
+                 "X-Cache": "miss", "X-Crop-Gain": f"{gain:.1f}"},
     )
+
+
+@app.post("/api/tryon/start")
+def tryon_start(
+    person: UploadFile = File(...),
+    cloth: UploadFile = File(...),
+    category: str = Form("upper"),
+    quality: str = Form("fast"),
+    cfg: float = Form(2.5),
+    stretto: bool = Form(True),
+) -> dict:
+    """Avvia una generazione locale e restituisce subito l'identificativo del lavoro.
+
+    Il client poi ascolta /api/tryon/stream/{id}: cosi' i settantacinque secondi
+    non sono un'attesa cieca, si vede il capo formarsi.
+    """
+    q = QUALITY.get(quality, QUALITY["fast"])
+    cat = category if category in ("upper", "lower", "overall") else "upper"
+    person_img = Image.open(io.BytesIO(_flatten_on_white(person.file.read()))).convert("RGB")
+    cloth_img = Image.open(io.BytesIO(_flatten_on_white(cloth.file.read()))).convert("RGB")
+
+    mask = garment_mask(person_img, cat)
+    box = riquadro_di_lavoro(mask, person_img.size) if stretto else None
+    gain = guadagno(mask, person_img.size) if box else 1.0
+
+    def esegui(job, Contapassi):
+        dentro_p = person_img.crop(box) if box else person_img
+        dentro_m = mask.crop(box) if box else mask
+        gen = torch.Generator(device="cpu").manual_seed(42)
+        with _LOCK, Contapassi(PIPE, job, concat_dim=-2):
+            out = PIPE(dentro_p, cloth_img, dentro_m,
+                       num_inference_steps=q["steps"], guidance_scale=cfg,
+                       height=q["height"], width=q["width"], generator=gen)[0]
+        finale = ricomponi(person_img, out, mask, box) if box else out
+        try:
+            torch.mps.empty_cache()
+        except Exception:
+            pass
+        return finale
+
+    job = live_tryon.avvia(esegui, passi=q["steps"], guadagno=gain)
+    W, H = person_img.size
+    riquadro = [box[0] / W, box[1] / H, box[2] / W, box[3] / H] if box else [0, 0, 1, 1]
+    return {"id": job.id, "passi": job.passi, "guadagno": round(gain, 1),
+            "riquadro": [round(v, 4) for v in riquadro]}
+
+
+@app.get("/api/tryon/stream/{job_id}")
+def tryon_stream(job_id: str):
+    """Avanzamento in tempo reale, con le anteprime dei latenti gia' decodificate."""
+    job = live_tryon.lavoro(job_id)
+    if job is None:
+        return JSONResponse(status_code=404, content={"error": "lavoro sconosciuto"})
+
+    def eventi():
+        ultimo, ultima_anteprima = -1, -1
+        fine = time.time() + 600
+        while time.time() < fine:
+            if job.versione != ultimo:
+                ultimo = job.versione
+                nuova = job.anteprima_v != ultima_anteprima
+                ultima_anteprima = job.anteprima_v
+                yield f"data: {json.dumps(job.istantanea(con_anteprima=nuova))}\n\n"
+            if job.stato in ("finito", "errore"):
+                return
+            time.sleep(0.2)
+        yield 'data: {"stato":"errore","errore":"tempo scaduto"}\n\n'
+
+    return StreamingResponse(eventi(), media_type="text/event-stream",
+                             headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"})
+
+
+@app.get("/api/tryon/result/{job_id}")
+def tryon_result(job_id: str):
+    job = live_tryon.lavoro(job_id)
+    if job is None or job.risultato is None:
+        return JSONResponse(status_code=404, content={"error": "risultato non pronto"})
+    buf = io.BytesIO()
+    job.risultato.save(buf, format="PNG")
+    buf.seek(0)
+    return StreamingResponse(buf, media_type="image/png",
+                             headers={"Cache-Control": "no-store",
+                                      "X-Inference-Seconds": f"{job.secondi:.1f}",
+                                      "X-Crop-Gain": f"{job.guadagno:.1f}"})
+
+
+# ----------------------------------------------------------------- le figure
+FIGURE = ArchivioFigure(os.path.join(BACKEND, "data", "figure"))
+
+
+@app.get("/api/figures")
+def figures_list() -> dict:
+    return {"items": FIGURE.tutte()}
+
+
+@app.post("/api/figures")
+def figures_add(photo: UploadFile = File(...), nome: str = Form("")) -> dict:
+    img = Image.open(io.BytesIO(photo.file.read())).convert("RGB")
+    riga = FIGURE.aggiungi(img, nome)
+    # gli appigli sono il conto lento: falli una volta e tienili con la figura
+    try:
+        from mask_from_person import person_anchors
+        riga = FIGURE.aggiorna(riga["id"], **person_anchors(img)) or riga
+    except Exception as exc:
+        print(f"[vesta] appigli non calcolati: {exc}")
+    try:
+        riga = FIGURE.aggiorna(riga["id"], colori=analyze_colors(img)) or riga
+    except Exception as exc:
+        print(f"[vesta] analisi colore non riuscita: {exc}")
+    return {"item": riga}
+
+
+@app.get("/api/figures/{fid}/photo")
+def figures_photo(fid: str):
+    p = FIGURE.percorso(fid)
+    if not os.path.exists(p):
+        return JSONResponse(status_code=404, content={"error": "figura non trovata"})
+    return StreamingResponse(open(p, "rb"), media_type="image/jpeg",
+                             headers={"Cache-Control": "public, max-age=3600"})
+
+
+@app.post("/api/figures/{fid}/active")
+def figures_active(fid: str) -> dict:
+    r = FIGURE.rendi_attiva(fid)
+    return {"item": r} if r else JSONResponse(status_code=404, content={"error": "figura non trovata"})
+
+
+@app.post("/api/figures/{fid}")
+def figures_rename(fid: str, nome: str = Form("")) -> dict:
+    r = FIGURE.aggiorna(fid, nome=nome.strip()[:40] or None)
+    return {"item": r} if r else JSONResponse(status_code=404, content={"error": "figura non trovata"})
+
+
+@app.delete("/api/figures/{fid}")
+def figures_delete(fid: str) -> dict:
+    return {"ok": FIGURE.elimina(fid)}
 
 
 @app.post("/analyze")
@@ -379,6 +536,66 @@ def api_wardrobe_update(item_id: str, label: str = Form(""), category: str = For
             _save_wardrobe(items)
             return {"ok": True, "item": i}
     return JSONResponse(status_code=404, content={"error": "capo non trovato"})
+
+
+@app.get("/api/wardrobe/export")
+def wardrobe_export():
+    """Tutto il guardaroba in uno zip: le immagini piu' il loro indice.
+
+    E' la versione onesta della "integrazione PIM/DAM" di chi vende agli
+    uffici: i dati sono tuoi, li porti via in un file e li rimetti dove vuoi.
+    """
+    import zipfile
+    buf = io.BytesIO()
+    items = _load_wardrobe()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
+        z.writestr("guardaroba.json", json.dumps(items, ensure_ascii=False, indent=1))
+        for it in items:
+            p = os.path.join(WARDROBE_DIR, it["id"] + ".png")
+            if os.path.exists(p):
+                z.write(p, f"capi/{it['id']}.png")
+        for f in FIGURE.tutte():
+            p = FIGURE.percorso(f["id"])
+            if os.path.exists(p):
+                z.write(p, f"figure/{f['id']}.jpg")
+        z.writestr("figure.json", json.dumps(FIGURE.tutte(), ensure_ascii=False, indent=1))
+    buf.seek(0)
+    return StreamingResponse(buf, media_type="application/zip", headers={
+        "Content-Disposition": 'attachment; filename="vesta-guardaroba.zip"',
+        "Cache-Control": "no-store"})
+
+
+@app.post("/api/wardrobe/import")
+def wardrobe_import(archivio: UploadFile = File(...)) -> dict:
+    """Rimette dentro uno zip prodotto da /api/wardrobe/export. Non cancella niente."""
+    import zipfile
+    try:
+        z = zipfile.ZipFile(io.BytesIO(archivio.file.read()))
+    except Exception:
+        return JSONResponse(status_code=400, content={"error": "non e' uno zip leggibile"})
+
+    esistenti = _load_wardrobe()
+    noti = {i["id"] for i in esistenti}
+    aggiunti = 0
+    try:
+        nuovi = json.loads(z.read("guardaroba.json"))
+    except Exception:
+        return JSONResponse(status_code=400, content={"error": "manca guardaroba.json"})
+
+    for it in nuovi:
+        fid = it.get("id")
+        if not fid or fid in noti:
+            continue
+        nome = f"capi/{fid}.png"
+        if nome not in z.namelist():
+            continue
+        with open(os.path.join(WARDROBE_DIR, fid + ".png"), "wb") as f:
+            f.write(z.read(nome))
+        esistenti.append(it)
+        noti.add(fid)
+        aggiunti += 1
+    _save_wardrobe(esistenti)
+    return {"ok": True, "aggiunti": aggiunti, "gia_presenti": len(nuovi) - aggiunti}
 
 
 @app.post("/api/anchors")

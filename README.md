@@ -56,4 +56,4 @@ Scaffold SwiftUI in `ios/`: una WKWebView verso il server, con l'indirizzo confi
 
 ## Licenze
 
-CatVTON e IDM-VTON hanno licenza non commerciale, quindi valgono per uso personale e per ricerca ma non per un prodotto. Sostituirli è la cosa da fare prima di qualunque lancio. Il piano per App Store e abbonamenti è in [PIANO.md](PIANO.md).
+I blocchi sono due, non uno: CatVTON e anche `segformer_b2_clothes`, che fa le maschere, sono entrambi non commerciali. Finché restano, Vesta è un progetto aperto e personale e non un binario da vendere. Cosa esattamente blocca cosa, e la strada verificata per uscirne, stanno in [LICENZE.md](LICENZE.md). Il piano per App Store e abbonamenti è in [PIANO.md](PIANO.md).
