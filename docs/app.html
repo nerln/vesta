@@ -599,7 +599,7 @@ function Sheet({sheet,close,ctx}){
         <button aria-pressed=${prov===p} onClick=${()=>{setProv(p);V.settings.provider=p;setKey('');}}>${l}</button>`)}
     </div>
     ${prov==='openai'?html`<div class="err-box" style="margin-bottom:12px">
-      OpenAI non risponde alle pagine web: il browser blocca la chiamata prima che parta, perche'
+      OpenAI non risponde alle pagine web: il browser blocca la chiamata prima che parta, perché
       api.openai.com non autorizza l'header con la chiave. In questa versione funziona Gemini.
       Per usare OpenAI serve la versione con il backend sul tuo Mac.</div>`:null}
     <div class="row">

@@ -48,7 +48,7 @@ export async function downscale(blob, max = 1400) {
   if (s === 1) return blob;
   const c = canvasOf(Math.round(bmp.width * s), Math.round(bmp.height * s));
   c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
-  // Il JPEG non ha trasparenza: una figura gia' ritagliata resterebbe con il fondo nero.
+  // Il JPEG non ha trasparenza: una figura già ritagliata resterebbe con il fondo nero.
   const alpha = blob.type === 'image/png' || blob.type === 'image/webp';
   return alpha ? toBlob(c, 'image/png') : toBlob(c, 'image/jpeg', 0.92);
 }
