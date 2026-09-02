@@ -178,15 +178,18 @@ footer{padding:44px 0 60px;border-top:1px solid var(--line-soft);color:var(--ink
         <h3 data-t="c2t">Con il backend</h3>
         <p data-t="c2p">Qui vivono i modelli. Il ritaglio diventa generativo, cioè il capo viene ridisegnato
           come foto di catalogo invece che scontornato, e la prova viene generata davvero sulla tua figura.
-          Serve Apple Silicon e circa novanta secondi a prova, ma non esce niente dal computer.</p></div>
+          Serve Apple Silicon e circa novanta secondi a prova, ma non esce niente dal computer. C'è anche una
+          modalità Premium opzionale con OpenAI o Gemini, per chi preferisce quei modelli: la chiave resta sul
+          server.</p></div>
       <div class="card"><span class="meta" data-t="e3">Sul telefono</span>
         <h3 data-t="c3t">Nella schermata Home</h3>
         <p data-t="c3p">Da iPhone la pagina si installa come un'app e si apre a schermo intero. Funziona
           anche senza rete, perché tutto quello che le serve è già scaricato.</p></div>
     </div>
     <p class="warn" style="margin-top:26px" data-t="avviso">Le chiavi delle API non stanno nel browser, e non
-      c'è nessun campo per incollarle. Se un giorno Vesta userà i modelli a pagamento, la chiave starà su un
-      server, una sola, e non nel dispositivo di chi la usa.</p>
+      c'è nessun campo per incollarle. Il backend può già usare modelli a pagamento (OpenAI gpt-image-1,
+      Gemini): la chiave sta in un file sul server o in una variabile d'ambiente, mai nel browser né nel
+      dispositivo di chi lo usa.</p>
   </section>
 
   <section id="installare">
@@ -249,11 +252,11 @@ const EN={
  "c1b": "Open Vesta",
  "e2": "On the Mac",
  "c2t": "With the backend",
- "c2p": "This is where the models live. The cutout becomes generative, meaning the garment is redrawn as a catalog photo rather than traced around, and the try-on is really generated on your figure. It needs Apple Silicon and about ninety seconds per try-on, but nothing leaves the computer.",
+ "c2p": "This is where the models live. The cutout becomes generative, meaning the garment is redrawn as a catalog photo rather than traced around, and the try-on is really generated on your figure. It needs Apple Silicon and about ninety seconds per try-on, but nothing leaves the computer. There is also an optional Premium mode with OpenAI or Gemini, for anyone who prefers those models: the key stays on the server.",
  "e3": "On your phone",
  "c3t": "On the Home screen",
  "c3p": "On iPhone the page installs like an app and opens full screen. It works offline too, because everything it needs is already downloaded.",
- "avviso": "API keys do not live in the browser, and there is no field to paste one into. If Vesta ever uses the paid models, the key will sit on a server, one of them, and not on the device of whoever is using it.",
+ "avviso": "API keys do not live in the browser, and there is no field to paste one into. The backend can already use paid models (OpenAI gpt-image-1, Gemini): the key lives in a file on the server or an environment variable, never in the browser or on the device of whoever is using it.",
  "n3": "Install",
  "h3": "The browser version needs no installing.",
  "sub3": "Just open <a href=\"app.html\">the app</a>. The one with the models does need a Mac with Apple Silicon: the first run downloads about four gigabytes of weights, then it works offline.",
