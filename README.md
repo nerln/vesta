@@ -1,29 +1,29 @@
 # Vesta
 
-Armadio virtuale. Fotografi i vestiti che possiedi, li ritagli su fondo trasparente e li provi addosso a una tua foto.
+Virtual wardrobe. You photograph the clothes you own, cut them out on a transparent background and try them on over a photo of yourself.
 
-Vibe coded da Eugenio Nerelli e Gianmattia Barone.
+By Eugenio Nerelli and Gianmattia Barone.
 
-Ci sono due versioni, e la differenza è dove sta il modello.
+There are two versions, and the difference is where the model lives.
 
-## Nel browser
+## In the browser
 
 **https://nerln.github.io/vesta/app.html**
 
-Si apre e funziona. Non c'è niente da installare, non c'è account, non c'è nessun campo dove incollare una chiave API, e nessuna immagine lascia il dispositivo.
+It opens and it works. There is nothing to install, no account, no field where you paste an API key, and no image leaves the device.
 
-- Ritaglio dei capi dal fondo tinta unita: misura il colore sul bordo, l'alfa viene dalla distanza e solo il fondo collegato al bordo diventa trasparente. Gira su canvas, fra i 12 e i 56 ms su un'immagine da mezzo megapixel. Se il capo ha lo stesso colore del muro, o se il fondo non è uniforme, lo dice invece di consegnare un ritaglio bucato.
-- Guardaroba filtrabile, con nove capi di prova già dentro.
-- Trascini il capo sulla figura e il montaggio è immediato.
-- "Salva il look" compone un PNG vero, esportabile, che finisce nel lookbook.
-- Tutto in IndexedDB: resta lì e sparisce solo se cancelli i dati del sito.
-- Italiano e inglese, tema scuro e chiaro, installabile sulla schermata Home dell'iPhone.
+- Garment cutout from a plain background: it measures the colour at the edge, the alpha comes from the distance, and only the background connected to the edge becomes transparent. It runs on canvas, between 12 and 56 ms on a half-megapixel image. If the garment is the same colour as the wall, or if the background is not uniform, it says so instead of handing over a cutout with holes in it.
+- A filterable wardrobe, with nine sample garments already inside.
+- You drag the garment onto the figure and the fitting is immediate.
+- "Save the look" composes a real, exportable PNG that ends up in the lookbook.
+- Everything is in IndexedDB: it stays there and disappears only if you delete the site data.
+- Italian and English, dark and light theme, installable on the iPhone Home Screen.
 
-Nessun modello gira qui, quindi niente prova generata: per quella serve il backend.
+No model runs here, so there is no generated try-on: for that you need the backend.
 
-## Sul Mac, con il backend
+## On the Mac, with the backend
 
-Qui vivono i modelli, e il ritaglio diventa generativo: il capo viene ridisegnato come foto di catalogo su fondo chroma invece che scontornato, poi il chroma diventa trasparenza. La prova viene generata davvero sulla figura.
+This is where the models live, and the cutout becomes generative: the garment is redrawn as a catalogue photo on a chroma background instead of being cut out, then the chroma becomes transparency. The try-on is really generated on the figure.
 
 ```bash
 cd backend
@@ -35,25 +35,25 @@ git clone https://github.com/Zheng-Chong/CatVTON
 .venv/bin/python -m uvicorn server:app --host 0.0.0.0 --port 8770
 ```
 
-Apri http://127.0.0.1:8770, oppure http://IP-DEL-MAC:8770 dallo smartphone sulla stessa rete.
+Open http://127.0.0.1:8770, or http://IP-OF-THE-MAC:8770 from a smartphone on the same network.
 
-Serve un Mac Apple Silicon e Python 3.11. Il primo avvio scarica circa quattro gigabyte di pesi.
+It needs an Apple Silicon Mac and Python 3.11. The first start downloads about four gigabytes of weights.
 
-- Try-on con CatVTON su MPS, circa novanta secondi a prova.
-- Maschere con `segformer_b2_clothes`, senza detectron2.
-- Analisi colore: sottotono della pelle in CIELAB, stagione e palette.
-- Modelli a pagamento: la chiave sta in `backend/.keys.json` (fuori da git) o nelle variabili `OPENAI_API_KEY` e `GEMINI_API_KEY`, la chiamata parte dal server e la chiave non arriva mai al client.
+- Try-on with CatVTON on MPS, about ninety seconds per try-on.
+- Masks with `segformer_b2_clothes`, without detectron2.
+- Colour analysis: skin undertone in CIELAB, season and palette.
+- Paid models: the key lives in `backend/.keys.json` (outside git) or in the `OPENAI_API_KEY` and `GEMINI_API_KEY` variables, the call starts from the server and the key never reaches the client.
 
-## Perché le chiavi non stanno nel browser
+## Why the keys do not live in the browser
 
-Un campo dove incollare una chiave API dentro una pagina web è una cattiva idea, e su GitHub Pages lo è due volte: tutti i progetti di uno stesso account condividono l'origine `<utente>.github.io`, quindi una chiave in `localStorage` sarebbe leggibile da qualunque altra pagina dello stesso account. La versione nel browser non ne ha nessuna, e all'avvio cancella quelle salvate da versioni precedenti.
+A field where you paste an API key inside a web page is a bad idea, and on GitHub Pages it is a bad idea twice over: all the projects of one account share the origin `<user>.github.io`, so a key in `localStorage` would be readable by any other page of the same account. The browser version has none, and at startup it deletes the ones saved by earlier versions.
 
-C'è anche un fatto misurato che vale la pena sapere: le API di OpenAI non sono chiamabili da una pagina web. Una POST con l'header `Authorization` non parte, perché il preflight non viene autorizzato; la stessa richiesta senza quell'header risponde 401. Gemini invece risponde. Quindi anche volendo, quel campo avrebbe funzionato con un solo provider su due.
+There is also a measured fact worth knowing: the OpenAI APIs cannot be called from a web page. A POST with the `Authorization` header does not go out, because the preflight is not authorised; the same request without that header answers 401. Gemini does answer. So even if we wanted to, that field would have worked with only one provider out of two.
 
-## App iOS
+## iOS app
 
-Scaffold SwiftUI in `ios/`: una WKWebView verso il server, con l'indirizzo configurabile.
+SwiftUI scaffold in `ios/`: a WKWebView pointing to the server, with a configurable address.
 
-## Licenze
+## Licences
 
-I blocchi sono due, non uno: CatVTON e anche `segformer_b2_clothes`, che fa le maschere, sono entrambi non commerciali. Finché restano, Vesta è un progetto aperto e personale e non un binario da vendere. Cosa esattamente blocca cosa, e la strada verificata per uscirne, stanno in [LICENZE.md](LICENZE.md). Il piano per App Store e abbonamenti è in [PIANO.md](PIANO.md).
+There are two blocks, not one: CatVTON and also `segformer_b2_clothes`, which makes the masks, are both non-commercial. As long as they stay, Vesta is an open, personal project and not a binary to sell. What exactly blocks what, and the verified way out, are in [THIRD-PARTY-LICENSES.md](THIRD-PARTY-LICENSES.md). The plan for the App Store and subscriptions is in [PLAN.md](PLAN.md).

@@ -1,29 +1,29 @@
-# Nota sull'ambiente, 10 agosto 2026
+# Environment note, 10 August 2026
 
-Durante una pulizia del disco sono stati tolti da questo progetto file pesanti
-che si riscaricano. **Il codice e la cronologia git non sono stati toccati.**
+During a disk cleanup, heavy files that can be downloaded again were removed from
+this project. **The code and the git history were not touched.**
 
-## Cosa manca e come si rimette
+## What is missing and how to put it back
 
-| Cosa | Peso | Come si ripristina |
+| What | Size | How to restore |
 |---|---|---|
-| `backend/.hf-cache/` | 3,8 GB | cache HuggingFace del backend: contiene i pesi di `booksforcharlie/stable-diffusion-inpainting` (3,2 GB) e `stabilityai/sd-vae-ft-mse` (319 MB). Si riscaricano da soli al primo avvio del backend. |
-| `backend/.venv/` | 1,2 GB | `cd backend && python3 -m venv .venv && pip install -r requirements.txt` |
+| `backend/.hf-cache/` | 3.8 GB | HuggingFace cache of the backend: it holds the weights of `booksforcharlie/stable-diffusion-inpainting` (3.2 GB) and `stabilityai/sd-vae-ft-mse` (319 MB). They download again by themselves at the first start of the backend. |
+| `backend/.venv/` | 1.2 GB | `cd backend && python3 -m venv .venv && pip install -r requirements.txt` |
 
-## Attenzione al Python
+## Watch the Python
 
-Il venv del backend **puntava a pyenv**, non al Python di sistema:
+The backend venv **pointed to pyenv**, not to the system Python:
 
 ```
 home = /Users/eugenionerelli/.pyenv/versions/3.11.13/bin
 ```
 
-`~/.pyenv` non e' stato toccato ed e' ancora al suo posto. Se ricrei il venv,
-usa la stessa versione (`pyenv local 3.11.13`) o il backend potrebbe non partire
-con le dipendenze bloccate.
+`~/.pyenv` was not touched and is still in place. If you recreate the venv,
+use the same version (`pyenv local 3.11.13`) or the backend may not start
+with the pinned dependencies.
 
-## Cosa non e' stato toccato
+## What was not touched
 
-`backend/CatVTON` e il resto del codice sono intatti. La cache HuggingFace
-scaricata dentro il progetto e' esclusa dai backup Time Machine, quindi se
-sparisce non c'e' modo di recuperarla se non riscaricandola.
+`backend/CatVTON` and the rest of the code are intact. The HuggingFace cache
+downloaded inside the project is excluded from Time Machine backups, so if it
+disappears there is no way to recover it other than downloading it again.

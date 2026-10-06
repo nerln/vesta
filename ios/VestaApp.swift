@@ -95,7 +95,7 @@ struct Offline: View {
                 Text("Non riesco a raggiungere il Mac").font(.headline)
                 Text("Controlla che Vesta sia aperta sul Mac e che iPhone e Mac siano sulla stessa rete Wi-Fi.")
                     .font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
-                Text(server).font(.system(.caption, design: .monospaced)).foregroundStyle(.tertiary)
+                Text(server).font(.caption).foregroundStyle(.tertiary)
                 Text(message).font(.caption2).foregroundStyle(.tertiary).multilineTextAlignment(.center)
             }
             HStack(spacing: 12) {
