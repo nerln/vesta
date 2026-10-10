@@ -52,6 +52,17 @@ img{-webkit-user-drag:none;user-select:none}
 .switch button{padding:7px 14px;border-radius:99px;font-size:12.5px;color:var(--ink-3);
   transition:color .2s var(--out),background .3s var(--out)}
 .switch button[aria-pressed="true"]{background:var(--surface-2);color:var(--ink)}
+/* Impostazioni: area toccabile di 44 px, mai schiacciata dalla barra delle schede */
+.set{display:inline-flex;align-items:center;justify-content:center;flex:none;width:44px;height:44px;margin:-4px -13px -4px 0;border-radius:50%}
+.set:hover .dot{box-shadow:0 0 0 4px var(--glow)}
+/* telefono: il nome e le Impostazioni stanno sulla prima riga, le tre schede sotto per tutta la larghezza */
+@media(max-width:560px){
+  .top{flex-wrap:wrap;row-gap:6px}
+  .wm{order:1}
+  .set{order:2;margin-right:-13px}
+  .switch{order:3;flex:1 0 100%}
+  .switch button{flex:1 1 0;min-width:0;padding:7px 6px;text-align:center;white-space:nowrap}
+}
 .dot{width:7px;height:7px;border-radius:50%;background:var(--ink-3);flex:none}
 .dot.on{background:var(--ok)} .dot.warn{background:var(--brass)}
 main{flex:1;overflow:auto;-webkit-overflow-scrolling:touch}
@@ -581,7 +592,7 @@ function App(){
           ${['camerino','guardaroba','lookbook'].map(k=>html`
             <button aria-pressed=${view===k} onClick=${()=>{setView(k);buzz(5);}}>${t(k)}</button>`)}
         </div>
-        <button class="row" style="gap:7px" onClick=${()=>setSheet({k:'impostazioni'})} aria-label=${t('impostazioni')}>
+        <button class="set" onClick=${()=>setSheet({k:'impostazioni'})} aria-label=${t('impostazioni')}>
           <span class="dot on"></span>
         </button>
       </div>

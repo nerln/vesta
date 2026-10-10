@@ -44,6 +44,11 @@ header nav a:hover{color:var(--ink)}
 .lingua button{display:inline-flex;align-items:center;gap:7px;border:0;border-radius:99px;background:none;
   color:var(--ink-3);font:inherit;font-size:12.5px;line-height:1;padding:6px 11px 6px 9px;cursor:pointer;
   transition:color .2s,background .2s,box-shadow .2s}
+/* area di tocco di almeno 44 px: il disegno resta piccolo, il tocco no */
+.lingua button{position:relative}
+.lingua button::after{content:"";position:absolute;inset:-10px -1px}
+/* il focus da tastiera e' un anello chiaro fuori dal bottone; lo stato attivo resta il filo ottone dentro */
+.lingua button:focus-visible{outline:2px solid var(--ink);outline-offset:1px}
 .lingua button svg{width:16px;height:11px;border-radius:2px;flex:none;opacity:.55;transition:opacity .2s;
   box-shadow:0 0 0 1px rgba(255,255,255,.12)}
 .lingua button:hover{color:var(--ink)}
